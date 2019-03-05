@@ -298,5 +298,3 @@ Attributor.prototype = {
 	}
 
 };
-
-var __utmz = new Attributor( 'alexa.com' );

@@ -1,10 +1,10 @@
 /*! 
- * attributor v1.0.0
+ * attributor v0.1.0
  * 
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2019-03-05 08:11:01 EST 
+ * Date: 2019-03-05 08:22:34 EST 
  */
 function Attributor(cookieDomain, fieldMap) {
     JSON.parse && JSON.stringify && (this.cookieDomain = cookieDomain || window.location.hostname, 
@@ -121,5 +121,3 @@ Attributor.prototype = {
         return params;
     }
 };
-
-var __utmz = new Attributor("alexa.com");
