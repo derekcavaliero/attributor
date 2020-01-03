@@ -1,10 +1,10 @@
 /*! 
- * attributor v0.1.0
+ * attributor v0.2.0
  * 
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2019-03-05 08:22:34 EST 
+ * Date: 2019-11-13 11:54:34 EST 
  */
 function Attributor(cookieDomain, fieldMap) {
     JSON.parse && JSON.stringify && (this.cookieDomain = cookieDomain || window.location.hostname, 
@@ -63,6 +63,7 @@ Attributor.prototype = {
             campaign: "(not set)",
             term: "(not provided)",
             content: "(not set)",
+            gclid: "",
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
             timestamp: Date.now()
@@ -84,8 +85,8 @@ Attributor.prototype = {
         }
         for (var utms = [ "source", "medium", "campaign", "term", "content" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
         if (this.params.utm_source || this.params.utm_medium || ((this.params.gclid || this.params.fbclid) && (data.medium = "cpc", 
-        forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google"), this.params.fbclid && (data.source = "facebook")), 
-        this.checkCookie("attr_first")) {
+        forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google", data.gclid = this.params.gclid), 
+        this.params.fbclid && (data.source = "facebook")), this.checkCookie("attr_first")) {
             var storedLastTouchData = !!this.checkCookie("attr_last") && this.getCookie("attr_last");
             !storedLastTouchData || forceLastTouchUpdate ? this.setCookie("attr_last", data, 30) : this.setCookie("attr_last", storedLastTouchData, 30);
         } else this.setCookie("attr_first", data, 730, "days"), this.setCookie("attr_last", data, 30);

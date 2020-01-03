@@ -15,6 +15,8 @@ function Attributor( cookieDomain, fieldMap ) {
             campaign: 'campaign_first',
             term: 'term_first',
             content: 'content_first',
+            adgroup: 'adgroup_first',
+            gclid: 'gclid_first',
             lp: 'lp_first',
             date: 'date_first'
         },
@@ -24,6 +26,8 @@ function Attributor( cookieDomain, fieldMap ) {
             campaign: 'campaign_last',
             term: 'term_last',
             content: 'content_last',
+            adgroup: 'adgroup_last',
+            gclid: 'gclid_last',
             lp: 'lp_last',
             date: 'date_last'
         }
@@ -106,6 +110,8 @@ Attributor.prototype = {
             campaign: '(not set)',
             term: '(not provided)',
             content: '(not set)',
+            adgroup: '',
+            gclid: '',
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
             timestamp: Date.now()
@@ -180,7 +186,7 @@ Attributor.prototype = {
         //
         // UTMs always take precedence over any referral parsing or direct traffic
         var utms = [
-            'source', 'medium', 'campaign', 'term', 'content'
+            'source', 'medium', 'campaign', 'term', 'content', 'adgroup'
         ];
 
         // @TODO: IF Source/Medium params have value(s) force reset attr_last cookie.
@@ -200,8 +206,10 @@ Attributor.prototype = {
                 forceLastTouchUpdate = true;
             }
 
-            if ( this.params.gclid )
+            if ( this.params.gclid ) {
                 data.source = 'google';
+                data.gclid = this.params.gclid;
+            }
 
             if ( this.params.fbclid )
                 data.source = 'facebook';
