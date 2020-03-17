@@ -4,26 +4,30 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2019-11-13 11:54:34 EST 
+ * Date: 2020-03-17 09:46:38 EDT 
  */
 function Attributor(cookieDomain, fieldMap) {
     JSON.parse && JSON.stringify && (this.cookieDomain = cookieDomain || window.location.hostname, 
     this.fieldMap = fieldMap || {
         first: {
-            source: "source_first",
-            medium: "medium_first",
-            campaign: "campaign_first",
-            term: "term_first",
-            content: "content_first",
-            lp: "lp_first",
-            date: "date_first"
+            source: "utm_source_1st",
+            medium: "utm_medium_1st",
+            campaign: "utm_campaign_1st",
+            term: "utm_term_1st",
+            content: "utm_content_1st",
+            adgroup: "utm_adgroup_1st",
+            gclid: "gclid_1st",
+            lp: "lp_1st",
+            date: "date_1st"
         },
         last: {
-            source: "source_last",
-            medium: "medium_last",
-            campaign: "campaign_last",
-            term: "term_last",
-            content: "content_last",
+            source: "utm_source",
+            medium: "utm_medium",
+            campaign: "utm_campaign",
+            term: "utm_term",
+            content: "utm_content",
+            adgroup: "utm_adgroup",
+            gclid: "gclid",
             lp: "lp_last",
             date: "date_last"
         }
@@ -63,6 +67,7 @@ Attributor.prototype = {
             campaign: "(not set)",
             term: "(not provided)",
             content: "(not set)",
+            adgroup: "",
             gclid: "",
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
@@ -83,7 +88,7 @@ Attributor.prototype = {
             }
             data.source = parsedSource ? parsedSource : this.referrer.hostname, data.medium = parsedMedium ? parsedMedium : "referral";
         }
-        for (var utms = [ "source", "medium", "campaign", "term", "content" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
+        for (var utms = [ "source", "medium", "campaign", "term", "content", "adgroup" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
         if (this.params.utm_source || this.params.utm_medium || ((this.params.gclid || this.params.fbclid) && (data.medium = "cpc", 
         forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google", data.gclid = this.params.gclid), 
         this.params.fbclid && (data.source = "facebook")), this.checkCookie("attr_first")) {
