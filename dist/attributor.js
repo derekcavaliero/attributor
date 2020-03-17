@@ -4,35 +4,42 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2020-03-17 09:46:38 EDT 
+ * Date: 2020-03-17 11:55:38 EDT 
  */
-function Attributor(cookieDomain, fieldMap) {
-    JSON.parse && JSON.stringify && (this.cookieDomain = cookieDomain || window.location.hostname, 
-    this.fieldMap = fieldMap || {
-        first: {
-            source: "utm_source_1st",
-            medium: "utm_medium_1st",
-            campaign: "utm_campaign_1st",
-            term: "utm_term_1st",
-            content: "utm_content_1st",
-            adgroup: "utm_adgroup_1st",
-            gclid: "gclid_1st",
-            lp: "lp_1st",
-            date: "date_1st"
-        },
-        last: {
-            source: "utm_source",
-            medium: "utm_medium",
-            campaign: "utm_campaign",
-            term: "utm_term",
-            content: "utm_content",
-            adgroup: "utm_adgroup",
-            gclid: "gclid",
-            lp: "lp_last",
-            date: "date_last"
+function Attributor(cookieDomain, customFieldMap, fieldTargetMethod) {
+    if (JSON.parse && JSON.stringify) {
+        this.cookieDomain = cookieDomain || window.location.hostname;
+        var defaultFieldMap = {
+            first: {
+                source: "utm_source_1st",
+                medium: "utm_medium_1st",
+                campaign: "utm_campaign_1st",
+                term: "utm_term_1st",
+                content: "utm_content_1st",
+                adgroup: "utm_adgroup_1st",
+                gclid: "gclid_1st",
+                lp: "lp_1st",
+                date: "date_1st"
+            },
+            last: {
+                source: "utm_source",
+                medium: "utm_medium",
+                campaign: "utm_campaign",
+                term: "utm_term",
+                content: "utm_content",
+                adgroup: "utm_adgroup",
+                gclid: "gclid",
+                lp: "lp_last",
+                date: "date_last"
+            }
+        };
+        if (this.fieldMap = defaultFieldMap, "object" == typeof customFieldMap && null !== customFieldMap) {
+            for (var key in defaultFieldMap) if (defaultFieldMap.hasOwnProperty(key)) if (customFieldMap.hasOwnProperty(key)) for (var prop in defaultFieldMap[key]) defaultFieldMap[key].hasOwnProperty(prop) && (customFieldMap[key].hasOwnProperty(prop) || (customFieldMap[key][prop] = defaultFieldMap[key][prop])); else customFieldMap[key] = defaultFieldMap[key];
+            this.fieldMap = customFieldMap;
         }
-    }, this.referrer = this.objectifyUrl(document.referrer), this.params = this.getUrlParams(), 
-    this.updateAttrCookies(), this.fillFormFields());
+        this.fieldTargetMethod = fieldTargetMethod || "name", this.referrer = this.objectifyUrl(document.referrer), 
+        this.params = this.getUrlParams(), this.updateAttrCookies(), this.fillFormFields();
+    }
 }
 
 Attributor.prototype = {
@@ -50,13 +57,26 @@ Attributor.prototype = {
         var yyyy = today.getFullYear();
         return yyyy + "-" + mm + "-" + dd;
     },
-    fillFormFields: function() {
-        var storage = {
+    fillFormFields: function(targetMethod) {
+        var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.fieldTargetMethod, storage = {
             first: this.getCookie("attr_first"),
             last: this.getCookie("attr_last")
         };
         for (var key in this.fieldMap) if (this.fieldMap.hasOwnProperty(key)) for (var prop in this.fieldMap[key]) if (this.fieldMap[key].hasOwnProperty(prop)) {
-            var fields = document.getElementsByName(this.fieldMap[key][prop]);
+            var fields;
+            switch (targetMethod) {
+              case "class":
+                fields = document.querySelectorAll("input." + this.fieldMap[key][prop]);
+                break;
+
+              case "parentClass":
+                fields = document.querySelectorAll("." + this.fieldMap[key][prop] + " input");
+                break;
+
+              case "name":
+              default:
+                fields = document.getElementsByName(this.fieldMap[key][prop]);
+            }
             if (fields) for (var i = 0; i < fields.length; i++) fields[i].value = storage[key][prop];
         }
     },

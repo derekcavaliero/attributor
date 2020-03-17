@@ -136,3 +136,22 @@ This can be helpful for a few scenarios
             __utmz.fillFormFields();
         });
     }
+
+#### Changing the Prefill Target Method
+By default, Attributor will use `<input>` `name` attributes for updating/prefilling. This can be customized when initializing attributor using the 3rd parameter `fieldTargetMethod`.
+
+- `name` (default) - uses `document.getElementsByName('{field_map_key}')`
+- `class` - uses `document.querySelectorAll('input.{field_map_key}')`
+- `parentClass` - uses `document.querySelectorAll('.{field_map_key} input')`
+
+For example:
+
+    // JavaScript
+    var __utmz = new Attributor('mydomain.com', {
+        last: {
+            source: 'custom_source_last'
+        }
+    }, 'class');
+
+    <!-- HTML -->
+    <input type="hidden" name="input_9a8dfs" class="custom_source_last">

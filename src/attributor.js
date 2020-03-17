@@ -1,4 +1,4 @@
-function Attributor( cookieDomain, fieldMap ) {
+function Attributor( cookieDomain, customFieldMap, fieldTargetMethod ) {
 
     // Gracefully terminate if native JSON parsing/serialization isn't available
     if ( !JSON.parse || !JSON.stringify )
@@ -6,7 +6,7 @@ function Attributor( cookieDomain, fieldMap ) {
 
     this.cookieDomain = cookieDomain || window.location.hostname;
 
-    this.fieldMap = fieldMap || {
+    var defaultFieldMap = {
         first: {
             source: 'utm_source_1st',
             medium: 'utm_medium_1st',
@@ -30,6 +30,35 @@ function Attributor( cookieDomain, fieldMap ) {
             date: 'date_last'
         }
     };
+
+    this.fieldMap = defaultFieldMap;
+
+    if ( typeof customFieldMap === 'object' && customFieldMap !== null ) {
+
+        for ( var key in defaultFieldMap ) {
+
+            if ( !defaultFieldMap.hasOwnProperty( key ) ) continue;
+
+            if ( !customFieldMap.hasOwnProperty( key ) ) {
+                customFieldMap[key] = defaultFieldMap[key];
+                continue;
+            }
+
+            for ( var prop in defaultFieldMap[key] ) {
+
+                if ( !defaultFieldMap[key].hasOwnProperty( prop ) ) continue;
+
+                if ( !customFieldMap[key].hasOwnProperty( prop ) ) {
+                    customFieldMap[key][prop] = defaultFieldMap[key][prop];
+                }
+            }
+        }
+
+        this.fieldMap = customFieldMap;
+
+    }
+
+    this.fieldTargetMethod = fieldTargetMethod || 'name';
 
     this.referrer = this.objectifyUrl( document.referrer );
     this.params = this.getUrlParams();
@@ -65,7 +94,9 @@ Attributor.prototype = {
 
     },
 
-    fillFormFields: function() {
+    fillFormFields: function( targetMethod ) {
+
+        var targetMethod = typeof targetMethod !== 'undefined' ? targetMethod : this.fieldTargetMethod;
 
         var storage = {
             first: this.getCookie( 'attr_first' ),
@@ -80,7 +111,24 @@ Attributor.prototype = {
 
                 if ( !this.fieldMap[key].hasOwnProperty( prop ) ) continue;
 
-                var fields = document.getElementsByName( this.fieldMap[key][prop] );
+                var fields;
+
+                switch ( targetMethod ) {
+
+                    case 'class':
+                        fields = document.querySelectorAll( 'input.' + this.fieldMap[key][prop] );
+                    break;
+
+                    case 'parentClass':
+                        fields = document.querySelectorAll( '.' + this.fieldMap[key][prop] + ' input' );
+                    break;
+
+                    case 'name':
+                    default:
+                        fields = document.getElementsByName( this.fieldMap[key][prop] );
+                    break;
+
+                }
 
                 if ( fields ) {
                     for ( var i = 0; i < fields.length; i++ )
