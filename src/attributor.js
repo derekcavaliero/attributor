@@ -1,7 +1,5 @@
 function Attributor( cookieDomain, fieldMap ) {
 
-    console.time('Attributor');
-
     // Gracefully terminate if native JSON parsing/serialization isn't available
     if ( !JSON.parse || !JSON.stringify )
         return;
@@ -10,24 +8,24 @@ function Attributor( cookieDomain, fieldMap ) {
 
     this.fieldMap = fieldMap || {
         first: {
-            source: 'source_first',
-            medium: 'medium_first',
-            campaign: 'campaign_first',
-            term: 'term_first',
-            content: 'content_first',
-            adgroup: 'adgroup_first',
-            gclid: 'gclid_first',
-            lp: 'lp_first',
-            date: 'date_first'
+            source: 'utm_source_1st',
+            medium: 'utm_medium_1st',
+            campaign: 'utm_campaign_1st',
+            term: 'utm_term_1st',
+            content: 'utm_content_1st',
+            adgroup: 'utm_adgroup_1st',
+            gclid: 'gclid_1st',
+            lp: 'lp_1st',
+            date: 'date_1st'
         },
         last: {
-            source: 'source_last',
-            medium: 'medium_last',
-            campaign: 'campaign_last',
-            term: 'term_last',
-            content: 'content_last',
-            adgroup: 'adgroup_last',
-            gclid: 'gclid_last',
+            source: 'utm_source',
+            medium: 'utm_medium',
+            campaign: 'utm_campaign',
+            term: 'utm_term',
+            content: 'utm_content',
+            adgroup: 'utm_adgroup',
+            gclid: 'gclid',
             lp: 'lp_last',
             date: 'date_last'
         }
@@ -74,11 +72,6 @@ Attributor.prototype = {
             last: this.getCookie( 'attr_last' )
         };
 
-        console.log( '\n' + '-------------------' + '\n' + 'FIRST TOUCH:' + '\n' + '-------------------' + '\n' );
-        console.log( storage.first );
-        console.log( '\n' + '-------------------' + '\n' + 'LAST TOUCH:' + '\n' + '-------------------' + '\n' );
-        console.log( storage.last );
-
         for ( var key in this.fieldMap ) {
 
             if ( !this.fieldMap.hasOwnProperty( key ) ) continue;
@@ -97,8 +90,6 @@ Attributor.prototype = {
             }
 
         }
-
-        console.timeEnd('Attributor');
 
     },
 
