@@ -1,4 +1,4 @@
-function Attributor( cookieDomain, customFieldMap, fieldTargetMethod ) {
+window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) {
 
     // Gracefully terminate if native JSON parsing/serialization isn't available
     if ( !JSON.parse || !JSON.stringify )
@@ -133,8 +133,10 @@ Attributor.prototype = {
                 }
 
                 if ( fields ) {
-                    for ( var i = 0; i < fields.length; i++ )
-                        fields[i].value = storage[key][prop];
+                    for ( var i = 0; i < fields.length; i++ ) {
+                        if ( storage[key].hasOwnProperty(prop) )
+                            fields[i].value = storage[key][prop];
+                    }
                 }
 
             }
@@ -290,9 +292,9 @@ Attributor.prototype = {
 
         return ( ( name != null && name != '' ) ? true : false );
 
-	},
+	  },
 
-    getCookie: function( name ) {
+    getCookie: function( name ) {   
 
         if ( document.cookie.length > 0 ) {
 
@@ -332,7 +334,7 @@ Attributor.prototype = {
 
         document.cookie = name + '=' + encodeURIComponent( JSON.stringify( value ) ) + ( ( expiresIn == null ) ? '' : '; domain=.' + this.cookieDomain + '; expires=' + expireDate.toUTCString() ) + '; path=/';
 
-	},
+    },
 
     getUrlParams: function( url ) {
 
@@ -353,6 +355,6 @@ Attributor.prototype = {
 
         return params;
 
-	}
+    }
 
 };
