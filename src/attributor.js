@@ -15,6 +15,7 @@ function Attributor( cookieDomain, customFieldMap, fieldTargetMethod ) {
             content: 'utm_content_1st',
             adgroup: 'utm_adgroup_1st',
             gclid: 'gclid_1st',
+            fbclid: 'fbclid_1st',
             lp: 'lp_1st',
             date: 'date_1st'
         },
@@ -26,6 +27,7 @@ function Attributor( cookieDomain, customFieldMap, fieldTargetMethod ) {
             content: 'utm_content',
             adgroup: 'utm_adgroup',
             gclid: 'gclid',
+            fbclid: 'fbclid',
             lp: 'lp_last',
             date: 'date_last'
         }
@@ -151,6 +153,7 @@ Attributor.prototype = {
             content: '(not set)',
             adgroup: '',
             gclid: '',
+            fbclid: '',
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
             timestamp: Date.now()
@@ -250,10 +253,18 @@ Attributor.prototype = {
                 data.gclid = this.params.gclid;
             }
 
-            if ( this.params.fbclid )
+            if ( this.params.fbclid ) {
                 data.source = 'facebook';
+                data.fbclid = this.params.fbclid;
+            }
 
         }
+
+        if ( this.params.gclid )
+            data.gclid = this.params.gclid;
+        
+        if ( this.params.fbclid )
+            data.fbclid = this.params.fbclid;
 
         if ( this.checkCookie( 'attr_first' ) ) {
 
@@ -275,70 +286,70 @@ Attributor.prototype = {
 
     checkCookie: function( name ) {
 
-		name = this.getCookie( name );
+        name = this.getCookie( name );
 
-		return ( ( name != null && name != '' ) ? true : false );
+        return ( ( name != null && name != '' ) ? true : false );
 
 	},
 
     getCookie: function( name ) {
 
-		if ( document.cookie.length > 0 ) {
+        if ( document.cookie.length > 0 ) {
 
-			var start = document.cookie.indexOf( name + '=' );
+            var start = document.cookie.indexOf( name + '=' );
 
-			if ( start != -1 ) {
+            if ( start != -1 ) {
 
-				start = start + name.length + 1;
+                start = start + name.length + 1;
 
-				var end = document.cookie.indexOf( ';', start );
+                var end = document.cookie.indexOf( ';', start );
 
-				if ( end == -1 ) {
-					end = document.cookie.length;
-				}
+                if ( end == -1 ) {
+                    end = document.cookie.length;
+                }
 
-				return JSON.parse( decodeURIComponent( document.cookie.substring( start, end ) ) );
+                return JSON.parse( decodeURIComponent( document.cookie.substring( start, end ) ) );
 
-			}
-		}
+            }
+        }
 
-		return '';
+        return '';
 
-	},
+    },
 
     setCookie: function( name, value, expiresIn, expiresInUnits ) {
 
         expiresInUnits = (typeof expiresInUnits !== 'undefined') ?  expiresInUnits : 'minutes';
 
-		var expireDate = new Date();
+        var expireDate = new Date();
 
         if ( 'days' == expiresInUnits )
-		      expireDate.setDate( expireDate.getDate() + expiresIn );
+            expireDate.setDate( expireDate.getDate() + expiresIn );
 
         if ( 'minutes' == expiresInUnits ) {
             expireDate.setTime( expireDate.getTime() + ( expiresIn * 60 * 1000 ) );
         }
 
-		document.cookie = name + '=' + encodeURIComponent( JSON.stringify( value ) ) + ( ( expiresIn == null ) ? '' : '; domain=.' + this.cookieDomain + '; expires=' + expireDate.toUTCString() ) + '; path=/';
+        document.cookie = name + '=' + encodeURIComponent( JSON.stringify( value ) ) + ( ( expiresIn == null ) ? '' : '; domain=.' + this.cookieDomain + '; expires=' + expireDate.toUTCString() ) + '; path=/';
 
 	},
 
     getUrlParams: function( url ) {
 
         var params = {};
-    	var parser = document.createElement( 'a' );
-    	parser.href = url || window.location.href;
+        var parser = document.createElement( 'a' );
+        parser.href = url || window.location.href;
 
         if ( !parser.search )
             return false;
 
-    	var query = parser.search.substring( 1 );
-    	var vars = query.split( '&' );
+        var query = parser.search.substring( 1 );
+        var vars = query.split( '&' );
 
         for ( var i = 0; i < vars.length; i++ ) {
-    		var pair = vars[i].split( '=' );
-    		params[pair[0]] = decodeURIComponent( pair[1] );
-    	}
+            var pair = vars[i].split( '=' );
+            params[pair[0]] = decodeURIComponent( pair[1] );
+        }
 
         return params;
 
