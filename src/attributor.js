@@ -31,14 +31,14 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
             lp: 'lp_last',
             date: 'date_last'
         },
-	    cookies: {
-	        _ga: 'ga',
-	        _fbp: 'fbp',
-	        _fbc: 'fbc'
-	    },
-	    globals: {
-	       'navigator.userAgent': 'user_agent'
-	    }
+        cookies: {
+            _ga: 'ga',
+            _fbp: 'fbp',
+            _fbc: 'fbc'
+        },
+        globals: {
+            'navigator.userAgent': 'user_agent'
+        }
     };
 
     this.fieldMap = defaultFieldMap;
