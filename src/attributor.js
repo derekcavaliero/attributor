@@ -30,7 +30,15 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
             fbclid: 'fbclid',
             lp: 'lp_last',
             date: 'date_last'
-        }
+        },
+	    cookies: {
+	        _ga: 'ga',
+	        _fbp: 'fbp',
+	        _fbc: 'fbc'
+	    },
+	    globals: {
+	       'navigator.userAgent': 'user_agent'
+	    }
     };
 
     this.fieldMap = defaultFieldMap;
@@ -102,7 +110,9 @@ Attributor.prototype = {
 
         var storage = {
             first: this.getCookie( 'attr_first' ),
-            last: this.getCookie( 'attr_last' )
+            last: this.getCookie( 'attr_last' ),
+            cookies: this.getCookieValues(),
+            globals: this.getGlobalValues()
         };
 
         for ( var key in this.fieldMap ) {
@@ -294,7 +304,9 @@ Attributor.prototype = {
 
 	  },
 
-    getCookie: function( name ) {   
+    getCookie: function( name, decode ) {   
+	    
+	    decode = (typeof decode !== 'undefined') ? decode : true;
 
         if ( document.cookie.length > 0 ) {
 
@@ -309,8 +321,13 @@ Attributor.prototype = {
                 if ( end == -1 ) {
                     end = document.cookie.length;
                 }
-
-                return JSON.parse( decodeURIComponent( document.cookie.substring( start, end ) ) );
+                
+                var value = document.cookie.substring( start, end );
+                
+                if (decode)
+                	return JSON.parse( decodeURIComponent( value ) );
+                	
+                return value;
 
             }
         }
@@ -334,6 +351,42 @@ Attributor.prototype = {
 
         document.cookie = name + '=' + encodeURIComponent( JSON.stringify( value ) ) + ( ( expiresIn == null ) ? '' : '; domain=.' + this.cookieDomain + '; expires=' + expireDate.toUTCString() ) + '; path=/';
 
+    },
+    
+    getCookieValues: function() {
+	    
+	    var cookies = {};
+	    
+	    for ( var prop in this.fieldMap.cookies ) {
+		    
+		    if ( !this.fieldMap.cookies.hasOwnProperty(prop) )
+		    	continue;
+		    
+		    cookies[prop] = this.getCookie(prop, false);
+		    
+	    }
+	    
+	    return cookies;
+	    
+    },
+    
+    getGlobalValues: function() {
+	    
+	    var globals = {};
+	    
+	    for ( var prop in this.fieldMap.globals ) {
+		    
+		    if ( !this.fieldMap.globals.hasOwnProperty(prop) )
+		    	continue;
+		    	
+		    var global = prop.split('.');
+		    
+		    globals[prop] = window[global[0]][global[1]];
+		    
+	    }
+	    
+	    return globals;
+	    
     },
 
     getUrlParams: function( url ) {

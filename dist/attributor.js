@@ -4,9 +4,9 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2020-03-17 11:55:38 EDT 
+ * Date: 2021-04-15 17:34:07 EDT 
  */
-function Attributor(cookieDomain, customFieldMap, fieldTargetMethod) {
+window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
         this.cookieDomain = cookieDomain || window.location.hostname;
         var defaultFieldMap = {
@@ -18,6 +18,7 @@ function Attributor(cookieDomain, customFieldMap, fieldTargetMethod) {
                 content: "utm_content_1st",
                 adgroup: "utm_adgroup_1st",
                 gclid: "gclid_1st",
+                fbclid: "fbclid_1st",
                 lp: "lp_1st",
                 date: "date_1st"
             },
@@ -29,8 +30,17 @@ function Attributor(cookieDomain, customFieldMap, fieldTargetMethod) {
                 content: "utm_content",
                 adgroup: "utm_adgroup",
                 gclid: "gclid",
+                fbclid: "fbclid",
                 lp: "lp_last",
                 date: "date_last"
+            },
+            cookies: {
+                _ga: "ga",
+                _fbp: "fbp",
+                _fbc: "fbc"
+            },
+            globals: {
+                "navigator.userAgent": "user_agent"
             }
         };
         if (this.fieldMap = defaultFieldMap, "object" == typeof customFieldMap && null !== customFieldMap) {
@@ -40,9 +50,7 @@ function Attributor(cookieDomain, customFieldMap, fieldTargetMethod) {
         this.fieldTargetMethod = fieldTargetMethod || "name", this.referrer = this.objectifyUrl(document.referrer), 
         this.params = this.getUrlParams(), this.updateAttrCookies(), this.fillFormFields();
     }
-}
-
-Attributor.prototype = {
+}, Attributor.prototype = {
     objectifyUrl: function(referrer) {
         var parser = document.createElement("a");
         return parser.href = referrer, {
@@ -60,7 +68,9 @@ Attributor.prototype = {
     fillFormFields: function(targetMethod) {
         var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.fieldTargetMethod, storage = {
             first: this.getCookie("attr_first"),
-            last: this.getCookie("attr_last")
+            last: this.getCookie("attr_last"),
+            cookies: this.getCookieValues(),
+            globals: this.getGlobalValues()
         };
         for (var key in this.fieldMap) if (this.fieldMap.hasOwnProperty(key)) for (var prop in this.fieldMap[key]) if (this.fieldMap[key].hasOwnProperty(prop)) {
             var fields;
@@ -77,7 +87,7 @@ Attributor.prototype = {
               default:
                 fields = document.getElementsByName(this.fieldMap[key][prop]);
             }
-            if (fields) for (var i = 0; i < fields.length; i++) fields[i].value = storage[key][prop];
+            if (fields) for (var i = 0; i < fields.length; i++) storage[key].hasOwnProperty(prop) && (fields[i].value = storage[key][prop]);
         }
     },
     updateAttrCookies: function() {
@@ -89,6 +99,7 @@ Attributor.prototype = {
             content: "(not set)",
             adgroup: "",
             gclid: "",
+            fbclid: "",
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
             timestamp: Date.now()
@@ -111,7 +122,9 @@ Attributor.prototype = {
         for (var utms = [ "source", "medium", "campaign", "term", "content", "adgroup" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
         if (this.params.utm_source || this.params.utm_medium || ((this.params.gclid || this.params.fbclid) && (data.medium = "cpc", 
         forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google", data.gclid = this.params.gclid), 
-        this.params.fbclid && (data.source = "facebook")), this.checkCookie("attr_first")) {
+        this.params.fbclid && (data.source = "facebook", data.fbclid = this.params.fbclid)), 
+        this.params.gclid && (data.gclid = this.params.gclid), this.params.fbclid && (data.fbclid = this.params.fbclid), 
+        this.checkCookie("attr_first")) {
             var storedLastTouchData = !!this.checkCookie("attr_last") && this.getCookie("attr_last");
             !storedLastTouchData || forceLastTouchUpdate ? this.setCookie("attr_last", data, 30) : this.setCookie("attr_last", storedLastTouchData, 30);
         } else this.setCookie("attr_first", data, 730, "days"), this.setCookie("attr_last", data, 30);
@@ -119,13 +132,15 @@ Attributor.prototype = {
     checkCookie: function(name) {
         return name = this.getCookie(name), null != name && "" != name;
     },
-    getCookie: function(name) {
-        if (document.cookie.length > 0) {
+    getCookie: function(name, decode) {
+        if (decode = "undefined" == typeof decode || decode, document.cookie.length > 0) {
             var start = document.cookie.indexOf(name + "=");
             if (start != -1) {
                 start = start + name.length + 1;
                 var end = document.cookie.indexOf(";", start);
-                return end == -1 && (end = document.cookie.length), JSON.parse(decodeURIComponent(document.cookie.substring(start, end)));
+                end == -1 && (end = document.cookie.length);
+                var value = document.cookie.substring(start, end);
+                return decode ? JSON.parse(decodeURIComponent(value)) : value;
             }
         }
         return "";
@@ -136,6 +151,19 @@ Attributor.prototype = {
         "days" == expiresInUnits && expireDate.setDate(expireDate.getDate() + expiresIn), 
         "minutes" == expiresInUnits && expireDate.setTime(expireDate.getTime() + 60 * expiresIn * 1e3), 
         document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + (null == expiresIn ? "" : "; domain=." + this.cookieDomain + "; expires=" + expireDate.toUTCString()) + "; path=/";
+    },
+    getCookieValues: function() {
+        var cookies = {};
+        for (var prop in this.fieldMap.cookies) this.fieldMap.cookies.hasOwnProperty(prop) && (cookies[prop] = this.getCookie(prop, !1));
+        return cookies;
+    },
+    getGlobalValues: function() {
+        var globals = {};
+        for (var prop in this.fieldMap.globals) if (this.fieldMap.globals.hasOwnProperty(prop)) {
+            var global = prop.split(".");
+            globals[prop] = window[global[0]][global[1]];
+        }
+        return globals;
     },
     getUrlParams: function(url) {
         var params = {}, parser = document.createElement("a");
