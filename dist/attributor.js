@@ -4,7 +4,7 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2021-04-15 17:34:07 EDT 
+ * Date: 2021-04-17 12:01:15 EDT 
  */
 window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
