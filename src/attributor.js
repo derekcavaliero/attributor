@@ -41,7 +41,16 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
         }
     };
 
+    var defaultFilters = {
+        _ga: function(val) {
+            // e.g: GA1.2.1234567890.0987654321
+            // Should return 1234567890.0987654321
+            return val.split('.').slice(2).join('.');
+        }
+    };
+
     this.fieldMap = defaultFieldMap;
+    this.filters = defaultFilters;
 
     if ( typeof customFieldMap === 'object' && customFieldMap !== null ) {
 
@@ -362,7 +371,7 @@ Attributor.prototype = {
 		    if ( !this.fieldMap.cookies.hasOwnProperty(prop) )
 		    	continue;
 		    
-		    cookies[prop] = this.getCookie(prop, false);
+		    cookies[prop] = ( this.filters[prop] ) ? this.filters[prop](this.getCookie(prop, false)) : this.getCookie(prop, false);
 		    
 	    }
 	    
@@ -381,7 +390,9 @@ Attributor.prototype = {
 		    	
 		    var global = prop.split('.');
 		    
-		    globals[prop] = window[global[0]][global[1]];
+            try{
+		        globals[prop] = window[global[0]][global[1]];
+            } catch(err){}
 		    
 	    }
 	    

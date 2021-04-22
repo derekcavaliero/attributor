@@ -4,7 +4,7 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2021-04-17 12:01:15 EDT 
+ * Date: 2021-04-22 10:44:37 EDT 
  */
 window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
@@ -42,8 +42,12 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
             globals: {
                 "navigator.userAgent": "user_agent"
             }
+        }, defaultFilters = {
+            _ga: function(val) {
+                return val.split(".").slice(2).join(".");
+            }
         };
-        if (this.fieldMap = defaultFieldMap, "object" == typeof customFieldMap && null !== customFieldMap) {
+        if (this.fieldMap = defaultFieldMap, this.filters = defaultFilters, "object" == typeof customFieldMap && null !== customFieldMap) {
             for (var key in defaultFieldMap) if (defaultFieldMap.hasOwnProperty(key)) if (customFieldMap.hasOwnProperty(key)) for (var prop in defaultFieldMap[key]) defaultFieldMap[key].hasOwnProperty(prop) && (customFieldMap[key].hasOwnProperty(prop) || (customFieldMap[key][prop] = defaultFieldMap[key][prop])); else customFieldMap[key] = defaultFieldMap[key];
             this.fieldMap = customFieldMap;
         }
@@ -154,14 +158,16 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     },
     getCookieValues: function() {
         var cookies = {};
-        for (var prop in this.fieldMap.cookies) this.fieldMap.cookies.hasOwnProperty(prop) && (cookies[prop] = this.getCookie(prop, !1));
+        for (var prop in this.fieldMap.cookies) this.fieldMap.cookies.hasOwnProperty(prop) && (cookies[prop] = this.filters[prop] ? this.filters[prop](this.getCookie(prop, !1)) : this.getCookie(prop, !1));
         return cookies;
     },
     getGlobalValues: function() {
         var globals = {};
         for (var prop in this.fieldMap.globals) if (this.fieldMap.globals.hasOwnProperty(prop)) {
             var global = prop.split(".");
-            globals[prop] = window[global[0]][global[1]];
+            try {
+                globals[prop] = window[global[0]][global[1]];
+            } catch (err) {}
         }
         return globals;
     },
