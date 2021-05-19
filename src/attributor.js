@@ -37,7 +37,8 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
             _fbc: 'fbc'
         },
         globals: {
-            'navigator.userAgent': 'user_agent'
+            'navigator.userAgent': 'user_agent',
+            'location.href': 'conversion_url'
         }
     };
 

@@ -4,7 +4,7 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2021-04-22 10:44:37 EDT 
+ * Date: 2021-05-19 15:20:31 EDT 
  */
 window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
@@ -40,7 +40,8 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
                 _fbc: "fbc"
             },
             globals: {
-                "navigator.userAgent": "user_agent"
+                "navigator.userAgent": "user_agent",
+                "location.href": "conversion_url"
             }
         }, defaultFilters = {
             _ga: function(val) {
