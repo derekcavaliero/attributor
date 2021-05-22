@@ -4,7 +4,7 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2021-05-19 15:20:31 EDT 
+ * Date: 2021-05-22 10:13:08 EDT 
  */
 window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
@@ -69,6 +69,19 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
         mm = mm < 10 ? "0" + mm : mm;
         var yyyy = today.getFullYear();
         return yyyy + "-" + mm + "-" + dd;
+    },
+    addHiddenFields: function(selector, excludeFields) {
+        for (var excludeFields = "undefined" != typeof excludeFields ? excludeFields : [], forms = document.querySelectorAll(selector), i = 0; i < forms.length; i++) {
+            for (var form = forms[i], existingFields = form.querySelectorAll('input[type="hidden"]'), existingFieldKeys = [], j = 0; j < existingFields.length; j++) existingFieldKeys.push(existingFields[j].name);
+            for (var key in this.fieldMap) if (this.fieldMap.hasOwnProperty(key)) for (var prop in this.fieldMap[key]) if (this.fieldMap[key].hasOwnProperty(prop)) {
+                var fieldName = this.fieldMap[key][prop];
+                if (!(existingFieldKeys.indexOf(fieldName) > -1 || excludeFields.indexOf(fieldName) > -1)) {
+                    var input = document.createElement("input");
+                    input.name = fieldName, input.type = "hidden", form.append(input);
+                }
+            }
+        }
+        this.fillFormFields();
     },
     fillFormFields: function(targetMethod) {
         var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.fieldTargetMethod, storage = {

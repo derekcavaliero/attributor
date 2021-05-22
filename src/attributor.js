@@ -114,6 +114,51 @@ Attributor.prototype = {
 
     },
 
+    addHiddenFields: function(selector, excludeFields) {
+
+        var excludeFields = (typeof excludeFields !== 'undefined') ? excludeFields : [];
+
+        var forms = document.querySelectorAll(selector);
+
+        for ( var i = 0; i < forms.length; i++ ) {
+
+            var form = forms[i];
+
+            var existingFields = form.querySelectorAll('input[type="hidden"]');
+            var existingFieldKeys = [];
+
+            for ( var j = 0; j < existingFields.length; j++ ) {
+                existingFieldKeys.push(existingFields[j].name);
+            }
+
+            for ( var key in this.fieldMap ) {
+
+                if ( !this.fieldMap.hasOwnProperty( key ) ) continue;
+
+                for ( var prop in this.fieldMap[key] ) {
+
+                    if ( !this.fieldMap[key].hasOwnProperty( prop ) ) continue;
+
+                    var fieldName = this.fieldMap[key][prop];
+
+                    if ( existingFieldKeys.indexOf(fieldName) > -1 || excludeFields.indexOf(fieldName) > -1 ) continue;
+
+                    var input = document.createElement('input');
+                    input.name = fieldName;
+                    input.type = 'hidden';
+
+                    form.append(input);
+
+                }
+
+            }
+
+        }
+
+        this.fillFormFields();
+
+    },
+
     fillFormFields: function( targetMethod ) {
 
         var targetMethod = typeof targetMethod !== 'undefined' ? targetMethod : this.fieldTargetMethod;
