@@ -163,7 +163,8 @@ Attributor.prototype = {
 
         var targetMethod = typeof targetMethod !== 'undefined' ? targetMethod : this.fieldTargetMethod;
 
-        var storage = {
+        var data = {
+            _params: this.params,
             first: this.getCookie( 'attr_first' ),
             last: this.getCookie( 'attr_last' ),
             cookies: this.getCookieValues(),
@@ -199,8 +200,8 @@ Attributor.prototype = {
 
                 if ( fields ) {
                     for ( var i = 0; i < fields.length; i++ ) {
-                        if ( storage[key].hasOwnProperty(prop) )
-                            fields[i].value = storage[key][prop];
+                        if ( data[key].hasOwnProperty(prop) )
+                            fields[i].value = data[key][prop];
                     }
                 }
 

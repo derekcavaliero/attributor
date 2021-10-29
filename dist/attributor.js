@@ -4,7 +4,7 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2021-05-22 10:13:08 EDT 
+ * Date: 2021-10-28 13:26:27 PDT 
  */
 window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
@@ -84,7 +84,8 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
         this.fillFormFields();
     },
     fillFormFields: function(targetMethod) {
-        var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.fieldTargetMethod, storage = {
+        var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.fieldTargetMethod, data = {
+            _params: this.params,
             first: this.getCookie("attr_first"),
             last: this.getCookie("attr_last"),
             cookies: this.getCookieValues(),
@@ -105,7 +106,7 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
               default:
                 fields = document.getElementsByName(this.fieldMap[key][prop]);
             }
-            if (fields) for (var i = 0; i < fields.length; i++) storage[key].hasOwnProperty(prop) && (fields[i].value = storage[key][prop]);
+            if (fields) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && (fields[i].value = data[key][prop]);
         }
     },
     updateAttrCookies: function() {
