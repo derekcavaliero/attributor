@@ -4,6 +4,8 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
     if ( !JSON.parse || !JSON.stringify )
         return;
 
+    var _self = this;
+
     this.cookieDomain = cookieDomain || window.location.hostname;
 
     var defaultFieldMap = {
@@ -14,8 +16,6 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
             term: 'utm_term_1st',
             content: 'utm_content_1st',
             adgroup: 'utm_adgroup_1st',
-            gclid: 'gclid_1st',
-            fbclid: 'fbclid_1st',
             lp: 'lp_1st',
             date: 'date_1st'
         },
@@ -32,9 +32,13 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
             date: 'date_last'
         },
         cookies: {
-            _ga: 'ga',
-            _fbp: 'fbp',
-            _fbc: 'fbc'
+            _fbc: 'fbc',            // Facebook Ads Click ID
+            _fbp: 'fbp',            // Facebook Ads Browser ID
+            _ga: 'ga',              // Google Analytics Client ID
+            _gcl_aw: 'gclid',       // Google Ads Click ID
+            _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
+            li_fat_id: 'li_fat_id', // LinkedIn Click ID
+            ttclid: 'ttclid'        // TikTok Ads Click ID
         },
         globals: {
             'navigator.userAgent': 'user_agent',
@@ -47,6 +51,16 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
             // e.g: GA1.2.1234567890.0987654321
             // Should return 1234567890.0987654321
             return val.split('.').slice(2).join('.');
+        },
+        _gcl_aw: function(val) {
+            // e.g: GCL.1645197936.xxxxxxxGCLIDxxxxxxx
+            // Should return xxxxxxxGCLIDxxxxxxx
+            return val.split('.').slice(2).join('.');
+        },
+        _uetmsclkid: function(val) {
+            // e.g: _uetxxxxxxxMSCLKIDxxxxxxx
+            // Should return xxxxxxxMSCLKIDxxxxxxx
+            return val.slice(4);
         }
     };
 
@@ -85,6 +99,14 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
 
     this.updateAttrCookies();
     this.fillFormFields();
+
+    document.body.addEventListener('click', function(e) {
+
+        if (!e.target.matches('input[type="submit"], button[type="submit"]')) return;
+
+        _self.fillFormFields();
+
+    });
 
 }
 
@@ -200,7 +222,7 @@ Attributor.prototype = {
 
                 if ( fields ) {
                     for ( var i = 0; i < fields.length; i++ ) {
-                        if ( data[key].hasOwnProperty(prop) )
+                        if ( data[key].hasOwnProperty(prop) && data[key][prop] != '' )
                             fields[i].value = data[key][prop];
                     }
                 }
@@ -316,15 +338,11 @@ Attributor.prototype = {
                 forceLastTouchUpdate = true;
             }
 
-            if ( this.params.gclid ) {
+            if ( this.params.gclid )
                 data.source = 'google';
-                data.gclid = this.params.gclid;
-            }
 
-            if ( this.params.fbclid ) {
+            if ( this.params.fbclid )
                 data.source = 'facebook';
-                data.fbclid = this.params.fbclid;
-            }
 
         }
 
@@ -358,7 +376,7 @@ Attributor.prototype = {
 
         return ( ( name != null && name != '' ) ? true : false );
 
-	  },
+	},
 
     getCookie: function( name, decode ) {   
 	    

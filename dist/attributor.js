@@ -4,10 +4,11 @@
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2021-10-28 13:26:27 PDT 
+ * Date: 2022-06-10 13:22:38 EDT 
  */
 window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
     if (JSON.parse && JSON.stringify) {
+        var _self = this;
         this.cookieDomain = cookieDomain || window.location.hostname;
         var defaultFieldMap = {
             first: {
@@ -17,8 +18,6 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
                 term: "utm_term_1st",
                 content: "utm_content_1st",
                 adgroup: "utm_adgroup_1st",
-                gclid: "gclid_1st",
-                fbclid: "fbclid_1st",
                 lp: "lp_1st",
                 date: "date_1st"
             },
@@ -35,9 +34,13 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
                 date: "date_last"
             },
             cookies: {
-                _ga: "ga",
+                _fbc: "fbc",
                 _fbp: "fbp",
-                _fbc: "fbc"
+                _ga: "ga",
+                _gcl_aw: "gclid",
+                _uetmsclkid: "msclkid",
+                li_fat_id: "li_fat_id",
+                ttclid: "ttclid"
             },
             globals: {
                 "navigator.userAgent": "user_agent",
@@ -46,6 +49,12 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
         }, defaultFilters = {
             _ga: function(val) {
                 return val.split(".").slice(2).join(".");
+            },
+            _gcl_aw: function(val) {
+                return val.split(".").slice(2).join(".");
+            },
+            _uetmsclkid: function(val) {
+                return val.slice(4);
             }
         };
         if (this.fieldMap = defaultFieldMap, this.filters = defaultFilters, "object" == typeof customFieldMap && null !== customFieldMap) {
@@ -53,7 +62,10 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
             this.fieldMap = customFieldMap;
         }
         this.fieldTargetMethod = fieldTargetMethod || "name", this.referrer = this.objectifyUrl(document.referrer), 
-        this.params = this.getUrlParams(), this.updateAttrCookies(), this.fillFormFields();
+        this.params = this.getUrlParams(), this.updateAttrCookies(), this.fillFormFields(), 
+        document.body.addEventListener("click", function(e) {
+            e.target.matches('input[type="submit"], button[type="submit"]') && _self.fillFormFields();
+        });
     }
 }, Attributor.prototype = {
     objectifyUrl: function(referrer) {
@@ -106,7 +118,7 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
               default:
                 fields = document.getElementsByName(this.fieldMap[key][prop]);
             }
-            if (fields) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && (fields[i].value = data[key][prop]);
+            if (fields) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && "" != data[key][prop] && (fields[i].value = data[key][prop]);
         }
     },
     updateAttrCookies: function() {
@@ -140,8 +152,7 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
         }
         for (var utms = [ "source", "medium", "campaign", "term", "content", "adgroup" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
         if (this.params.utm_source || this.params.utm_medium || ((this.params.gclid || this.params.fbclid) && (data.medium = "cpc", 
-        forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google", data.gclid = this.params.gclid), 
-        this.params.fbclid && (data.source = "facebook", data.fbclid = this.params.fbclid)), 
+        forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google"), this.params.fbclid && (data.source = "facebook")), 
         this.params.gclid && (data.gclid = this.params.gclid), this.params.fbclid && (data.fbclid = this.params.fbclid), 
         this.checkCookie("attr_first")) {
             var storedLastTouchData = !!this.checkCookie("attr_last") && this.getCookie("attr_last");
