@@ -152,21 +152,6 @@ This can be helpful for a few scenarios
 - Forms loaded via JS or 3rd party systems
 - When a form is loaded into the DOM after initial pageload (e.g: a modal/popup)
 
-#### Dynamically Add Fields to Form
-If you wish - you can explicity tell Attributor to append hidden fields that match your field mapping using the `addHiddenFields()` method.
-
-    <!-- HTML -->
-    <form class="my-form">
-    ...
-    </form>
-
-    // JavaScript
-    var __utmz = new Attributor('mydomain.com');
-    __utmz.addHiddenFields('form.my-form');
-
-As seen above, the first argument is a query selector string (passed into `document.querySelectorAll()`). The second optional argument is an array of fields to exclude from appending to the form. (e.g. `utm_source_1st`). 
-
-This method will only add hidden fields to the form if they do not already exist in the form. This is to prevent issues with duplicate field names.
 ##### HubSpot
 
     window.addEventListener('message', function(event) {
