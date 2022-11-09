@@ -1,73 +1,81 @@
 /*! 
- * attributor v0.2.0
+ * attributor v2.0
  * 
  * 
  * Copyright (c) 2018 Derek Cavaliero @ WebMechanix
  * 
- * Date: 2022-06-10 13:22:38 EDT 
+ * Date: 2022-11-08 17:49:08 PST 
  */
-window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
+window.Attributor = function(config) {
     if (JSON.parse && JSON.stringify) {
-        var _self = this;
-        this.cookieDomain = cookieDomain || window.location.hostname;
-        var defaultFieldMap = {
-            first: {
-                source: "utm_source_1st",
-                medium: "utm_medium_1st",
-                campaign: "utm_campaign_1st",
-                term: "utm_term_1st",
-                content: "utm_content_1st",
-                adgroup: "utm_adgroup_1st",
-                lp: "lp_1st",
-                date: "date_1st"
+        var _self = this, defaultConfig = {
+            cookieDomain: location.hostname,
+            fieldTargetMethod: "name",
+            fieldMap: {
+                first: {
+                    source: "utm_source_1st",
+                    medium: "utm_medium_1st",
+                    campaign: "utm_campaign_1st",
+                    term: "utm_term_1st",
+                    content: "utm_content_1st",
+                    source_platform: "utm_source_platform_1st",
+                    marketing_tactic: "utm_marketing_tactic_1st",
+                    creative_format: "utm_creative_format_1st",
+                    adgroup: "utm_adgroup_1st",
+                    lp: "lp_1st",
+                    date: "date_1st"
+                },
+                last: {
+                    source: "utm_source",
+                    medium: "utm_medium",
+                    campaign: "utm_campaign",
+                    term: "utm_term",
+                    content: "utm_content",
+                    source_platform: "utm_source_platform",
+                    marketing_tactic: "utm_marketing_tactic",
+                    creative_format: "utm_creative_format",
+                    adgroup: "utm_adgroup",
+                    lp: "lp_last",
+                    date: "date_last"
+                },
+                cookies: {
+                    _fbc: "fbc",
+                    _fbp: "fbp",
+                    _ga: "ga",
+                    _gcl_aw: "gclid",
+                    _uetmsclkid: "msclkid",
+                    li_fat_id: "li_fat_id",
+                    ttclid: "ttclid"
+                },
+                globals: {
+                    "navigator.userAgent": "user_agent",
+                    "location.href": "conversion_url",
+                    "document.referrer": "referrer"
+                }
             },
-            last: {
-                source: "utm_source",
-                medium: "utm_medium",
-                campaign: "utm_campaign",
-                term: "utm_term",
-                content: "utm_content",
-                adgroup: "utm_adgroup",
-                gclid: "gclid",
-                fbclid: "fbclid",
-                lp: "lp_last",
-                date: "date_last"
-            },
-            cookies: {
-                _fbc: "fbc",
-                _fbp: "fbp",
-                _ga: "ga",
-                _gcl_aw: "gclid",
-                _uetmsclkid: "msclkid",
-                li_fat_id: "li_fat_id",
-                ttclid: "ttclid"
-            },
-            globals: {
-                "navigator.userAgent": "user_agent",
-                "location.href": "conversion_url"
-            }
-        }, defaultFilters = {
-            _ga: function(val) {
-                return val.split(".").slice(2).join(".");
-            },
-            _gcl_aw: function(val) {
-                return val.split(".").slice(2).join(".");
-            },
-            _uetmsclkid: function(val) {
-                return val.slice(4);
+            filters: {
+                _ga: function(val) {
+                    return val.split(".").slice(2).join(".");
+                },
+                _gcl_aw: function(val) {
+                    return val.split(".").slice(2).join(".");
+                },
+                _uetmsclkid: function(val) {
+                    return val.slice(4);
+                }
             }
         };
-        if (this.fieldMap = defaultFieldMap, this.filters = defaultFilters, "object" == typeof customFieldMap && null !== customFieldMap) {
-            for (var key in defaultFieldMap) if (defaultFieldMap.hasOwnProperty(key)) if (customFieldMap.hasOwnProperty(key)) for (var prop in defaultFieldMap[key]) defaultFieldMap[key].hasOwnProperty(prop) && (customFieldMap[key].hasOwnProperty(prop) || (customFieldMap[key][prop] = defaultFieldMap[key][prop])); else customFieldMap[key] = defaultFieldMap[key];
-            this.fieldMap = customFieldMap;
-        }
-        this.fieldTargetMethod = fieldTargetMethod || "name", this.referrer = this.objectifyUrl(document.referrer), 
-        this.params = this.getUrlParams(), this.updateAttrCookies(), this.fillFormFields(), 
-        document.body.addEventListener("click", function(e) {
+        this.config = this.merge(defaultConfig, config), this.fieldMap = this.config.fieldMap, 
+        this.referrer = this.objectifyUrl(document.referrer), this.params = this.getUrlParams(), 
+        this.updateAttrCookies(), this.fillFormFields(), document.addEventListener("click", function(e) {
             e.target.matches('input[type="submit"], button[type="submit"]') && _self.fillFormFields();
         });
     }
 }, Attributor.prototype = {
+    merge: function(target, source) {
+        for (var prop in source) source.hasOwnProperty(prop) && source[prop] instanceof Object && Object.assign(source[prop], this.merge(target[prop], source[prop]));
+        return Object.assign(target || {}, source), target;
+    },
     objectifyUrl: function(referrer) {
         var parser = document.createElement("a");
         return parser.href = referrer, {
@@ -82,21 +90,8 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
         var yyyy = today.getFullYear();
         return yyyy + "-" + mm + "-" + dd;
     },
-    addHiddenFields: function(selector, excludeFields) {
-        for (var excludeFields = "undefined" != typeof excludeFields ? excludeFields : [], forms = document.querySelectorAll(selector), i = 0; i < forms.length; i++) {
-            for (var form = forms[i], existingFields = form.querySelectorAll('input[type="hidden"]'), existingFieldKeys = [], j = 0; j < existingFields.length; j++) existingFieldKeys.push(existingFields[j].name);
-            for (var key in this.fieldMap) if (this.fieldMap.hasOwnProperty(key)) for (var prop in this.fieldMap[key]) if (this.fieldMap[key].hasOwnProperty(prop)) {
-                var fieldName = this.fieldMap[key][prop];
-                if (!(existingFieldKeys.indexOf(fieldName) > -1 || excludeFields.indexOf(fieldName) > -1)) {
-                    var input = document.createElement("input");
-                    input.name = fieldName, input.type = "hidden", form.append(input);
-                }
-            }
-        }
-        this.fillFormFields();
-    },
     fillFormFields: function(targetMethod) {
-        var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.fieldTargetMethod, data = {
+        var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.config.fieldTargetMethod, data = {
             _params: this.params,
             first: this.getCookie("attr_first"),
             last: this.getCookie("attr_last"),
@@ -128,9 +123,10 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
             campaign: "(not set)",
             term: "(not provided)",
             content: "(not set)",
+            source_platform: "(not set)",
+            marketing_tactic: "(not set)",
+            creative_format: "(not set)",
             adgroup: "",
-            gclid: "",
-            fbclid: "",
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
             timestamp: Date.now()
@@ -150,10 +146,9 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
             }
             data.source = parsedSource ? parsedSource : this.referrer.hostname, data.medium = parsedMedium ? parsedMedium : "referral";
         }
-        for (var utms = [ "source", "medium", "campaign", "term", "content", "adgroup" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
+        for (var utms = [ "source", "medium", "campaign", "term", "content", "source_platform", "marketing_tactic", "creative_format", "adgroup" ], forceLastTouchUpdate = !(!this.params.utm_source && !this.params.utm_medium), i = 0; i < utms.length; i++) this.params["utm_" + utms[i]] && (data[utms[i]] = this.params["utm_" + utms[i]]);
         if (this.params.utm_source || this.params.utm_medium || ((this.params.gclid || this.params.fbclid) && (data.medium = "cpc", 
         forceLastTouchUpdate = !0), this.params.gclid && (data.source = "google"), this.params.fbclid && (data.source = "facebook")), 
-        this.params.gclid && (data.gclid = this.params.gclid), this.params.fbclid && (data.fbclid = this.params.fbclid), 
         this.checkCookie("attr_first")) {
             var storedLastTouchData = !!this.checkCookie("attr_last") && this.getCookie("attr_last");
             !storedLastTouchData || forceLastTouchUpdate ? this.setCookie("attr_last", data, 30) : this.setCookie("attr_last", storedLastTouchData, 30);
@@ -180,11 +175,11 @@ window.Attributor = function(cookieDomain, customFieldMap, fieldTargetMethod) {
         var expireDate = new Date();
         "days" == expiresInUnits && expireDate.setDate(expireDate.getDate() + expiresIn), 
         "minutes" == expiresInUnits && expireDate.setTime(expireDate.getTime() + 60 * expiresIn * 1e3), 
-        document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + (null == expiresIn ? "" : "; domain=." + this.cookieDomain + "; expires=" + expireDate.toUTCString()) + "; path=/";
+        document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + (null == expiresIn ? "" : "; domain=." + this.config.cookieDomain + "; expires=" + expireDate.toUTCString()) + "; path=/";
     },
     getCookieValues: function() {
         var cookies = {};
-        for (var prop in this.fieldMap.cookies) this.fieldMap.cookies.hasOwnProperty(prop) && (cookies[prop] = this.filters[prop] ? this.filters[prop](this.getCookie(prop, !1)) : this.getCookie(prop, !1));
+        for (var prop in this.fieldMap.cookies) this.fieldMap.cookies.hasOwnProperty(prop) && (cookies[prop] = this.config.filters[prop] ? this.config.filters[prop](this.getCookie(prop, !1)) : this.getCookie(prop, !1));
         return cookies;
     },
     getGlobalValues: function() {

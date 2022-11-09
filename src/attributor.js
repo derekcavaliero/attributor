@@ -1,108 +1,88 @@
-window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) {
+window.Attributor = function( config ) {
 
-    // Gracefully terminate if native JSON parsing/serialization isn't available
+    // Gracefully terminate if native JSON parsing isn't available
     if ( !JSON.parse || !JSON.stringify )
         return;
 
     var _self = this;
 
-    this.cookieDomain = cookieDomain || window.location.hostname;
-
-    var defaultFieldMap = {
-        first: {
-            source: 'utm_source_1st',
-            medium: 'utm_medium_1st',
-            campaign: 'utm_campaign_1st',
-            term: 'utm_term_1st',
-            content: 'utm_content_1st',
-            adgroup: 'utm_adgroup_1st',
-            lp: 'lp_1st',
-            date: 'date_1st'
-        },
-        last: {
-            source: 'utm_source',
-            medium: 'utm_medium',
-            campaign: 'utm_campaign',
-            term: 'utm_term',
-            content: 'utm_content',
-            adgroup: 'utm_adgroup',
-            gclid: 'gclid',
-            fbclid: 'fbclid',
-            lp: 'lp_last',
-            date: 'date_last'
-        },
-        cookies: {
-            _fbc: 'fbc',            // Facebook Ads Click ID
-            _fbp: 'fbp',            // Facebook Ads Browser ID
-            _ga: 'ga',              // Google Analytics Client ID
-            _gcl_aw: 'gclid',       // Google Ads Click ID
-            _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
-            li_fat_id: 'li_fat_id', // LinkedIn Click ID
-            ttclid: 'ttclid'        // TikTok Ads Click ID
-        },
-        globals: {
-            'navigator.userAgent': 'user_agent',
-            'location.href': 'conversion_url'
-        }
+    var defaultConfig = {
+      cookieDomain: location.hostname,
+      fieldTargetMethod: 'name',
+      fieldMap: {
+          first: {
+              source: 'utm_source_1st',
+              medium: 'utm_medium_1st',
+              campaign: 'utm_campaign_1st',
+              term: 'utm_term_1st',
+              content: 'utm_content_1st',
+              source_platform: 'utm_source_platform_1st',
+              marketing_tactic: 'utm_marketing_tactic_1st',
+              creative_format: 'utm_creative_format_1st',
+              adgroup: 'utm_adgroup_1st',
+              lp: 'lp_1st',
+              date: 'date_1st'
+          },
+          last: {
+              source: 'utm_source',
+              medium: 'utm_medium',
+              campaign: 'utm_campaign',
+              term: 'utm_term',
+              content: 'utm_content',
+              source_platform: 'utm_source_platform',
+              marketing_tactic: 'utm_marketing_tactic',
+              creative_format: 'utm_creative_format',
+              adgroup: 'utm_adgroup',
+              lp: 'lp_last',
+              date: 'date_last'
+          },
+          cookies: {
+              _fbc: 'fbc',            // Facebook Ads Click ID
+              _fbp: 'fbp',            // Facebook Ads Browser ID
+              _ga: 'ga',              // Google Analytics Client ID
+              _gcl_aw: 'gclid',       // Google Ads Click ID
+              _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
+              li_fat_id: 'li_fat_id', // LinkedIn Click ID
+              ttclid: 'ttclid'        // TikTok Ads Click ID
+          },
+          globals: {
+              'navigator.userAgent': 'user_agent',
+              'location.href': 'conversion_url',
+              'document.referrer': 'referrer'
+          }
+      },
+      filters: {
+          _ga: function(val) {
+              // e.g: GA1.2.1234567890.0987654321
+              // Should return 1234567890.0987654321
+              return val.split('.').slice(2).join('.');
+          },
+          _gcl_aw: function(val) {
+              // e.g: GCL.1645197936.xxxxxxxGCLIDxxxxxxx
+              // Should return xxxxxxxGCLIDxxxxxxx
+              return val.split('.').slice(2).join('.');
+          },
+          _uetmsclkid: function(val) {
+              // e.g: _uetxxxxxxxMSCLKIDxxxxxxx
+              // Should return xxxxxxxMSCLKIDxxxxxxx
+              return val.slice(4);
+          }
+      }
     };
+    
+    this.config = this.merge(defaultConfig, config);
+    this.fieldMap = this.config.fieldMap;
 
-    var defaultFilters = {
-        _ga: function(val) {
-            // e.g: GA1.2.1234567890.0987654321
-            // Should return 1234567890.0987654321
-            return val.split('.').slice(2).join('.');
-        },
-        _gcl_aw: function(val) {
-            // e.g: GCL.1645197936.xxxxxxxGCLIDxxxxxxx
-            // Should return xxxxxxxGCLIDxxxxxxx
-            return val.split('.').slice(2).join('.');
-        },
-        _uetmsclkid: function(val) {
-            // e.g: _uetxxxxxxxMSCLKIDxxxxxxx
-            // Should return xxxxxxxMSCLKIDxxxxxxx
-            return val.slice(4);
-        }
-    };
-
-    this.fieldMap = defaultFieldMap;
-    this.filters = defaultFilters;
-
-    if ( typeof customFieldMap === 'object' && customFieldMap !== null ) {
-
-        for ( var key in defaultFieldMap ) {
-
-            if ( !defaultFieldMap.hasOwnProperty( key ) ) continue;
-
-            if ( !customFieldMap.hasOwnProperty( key ) ) {
-                customFieldMap[key] = defaultFieldMap[key];
-                continue;
-            }
-
-            for ( var prop in defaultFieldMap[key] ) {
-
-                if ( !defaultFieldMap[key].hasOwnProperty( prop ) ) continue;
-
-                if ( !customFieldMap[key].hasOwnProperty( prop ) ) {
-                    customFieldMap[key][prop] = defaultFieldMap[key][prop];
-                }
-            }
-        }
-
-        this.fieldMap = customFieldMap;
-
-    }
-
-    this.fieldTargetMethod = fieldTargetMethod || 'name';
-
-    this.referrer = this.objectifyUrl( document.referrer );
+    this.referrer = this.objectifyUrl(document.referrer);
     this.params = this.getUrlParams();
 
     this.updateAttrCookies();
     this.fillFormFields();
 
-    document.body.addEventListener('click', function(e) {
+    document.addEventListener('click', function(e) {
 
-        if (!e.target.matches('input[type="submit"], button[type="submit"]')) return;
+        if (!e.target.matches('input[type="submit"], button[type="submit"]')) 
+          return;
 
         _self.fillFormFields();
 
@@ -111,6 +91,26 @@ window.Attributor = function( cookieDomain, customFieldMap, fieldTargetMethod ) 
 }
 
 Attributor.prototype = {
+
+    merge: function(target, source) {
+
+      // Iterate through `source` properties and if an `Object` set property to merge of `target` and `source` properties
+      for (var prop in source) {
+
+        if (!source.hasOwnProperty(prop))
+          continue;
+
+        if (source[prop] instanceof Object) 
+          Object.assign(source[prop], this.merge(target[prop], source[prop]));
+
+      }
+
+      // Join `target` and modified `source`
+      Object.assign(target || {}, source);
+
+      return target;
+
+    },
 
     objectifyUrl: function(referrer) {
 
@@ -136,54 +136,9 @@ Attributor.prototype = {
 
     },
 
-    addHiddenFields: function(selector, excludeFields) {
-
-        var excludeFields = (typeof excludeFields !== 'undefined') ? excludeFields : [];
-
-        var forms = document.querySelectorAll(selector);
-
-        for ( var i = 0; i < forms.length; i++ ) {
-
-            var form = forms[i];
-
-            var existingFields = form.querySelectorAll('input[type="hidden"]');
-            var existingFieldKeys = [];
-
-            for ( var j = 0; j < existingFields.length; j++ ) {
-                existingFieldKeys.push(existingFields[j].name);
-            }
-
-            for ( var key in this.fieldMap ) {
-
-                if ( !this.fieldMap.hasOwnProperty( key ) ) continue;
-
-                for ( var prop in this.fieldMap[key] ) {
-
-                    if ( !this.fieldMap[key].hasOwnProperty( prop ) ) continue;
-
-                    var fieldName = this.fieldMap[key][prop];
-
-                    if ( existingFieldKeys.indexOf(fieldName) > -1 || excludeFields.indexOf(fieldName) > -1 ) continue;
-
-                    var input = document.createElement('input');
-                    input.name = fieldName;
-                    input.type = 'hidden';
-
-                    form.append(input);
-
-                }
-
-            }
-
-        }
-
-        this.fillFormFields();
-
-    },
-
     fillFormFields: function( targetMethod ) {
 
-        var targetMethod = typeof targetMethod !== 'undefined' ? targetMethod : this.fieldTargetMethod;
+        var targetMethod = typeof targetMethod !== 'undefined' ? targetMethod : this.config.fieldTargetMethod;
 
         var data = {
             _params: this.params,
@@ -241,9 +196,10 @@ Attributor.prototype = {
             campaign: '(not set)',
             term: '(not provided)',
             content: '(not set)',
+            source_platform: '(not set)',
+            marketing_tactic: '(not set)',
+            creative_format: '(not set)',
             adgroup: '',
-            gclid: '',
-            fbclid: '',
             lp: window.location.hostname + window.location.pathname,
             date: this.formatDate(),
             timestamp: Date.now()
@@ -318,7 +274,7 @@ Attributor.prototype = {
         //
         // UTMs always take precedence over any referral parsing or direct traffic
         var utms = [
-            'source', 'medium', 'campaign', 'term', 'content', 'adgroup'
+            'source', 'medium', 'campaign', 'term', 'content', 'source_platform', 'marketing_tactic', 'creative_format', 'adgroup'
         ];
 
         // @TODO: IF Source/Medium params have value(s) force reset attr_last cookie.
@@ -345,12 +301,6 @@ Attributor.prototype = {
                 data.source = 'facebook';
 
         }
-
-        if ( this.params.gclid )
-            data.gclid = this.params.gclid;
-        
-        if ( this.params.fbclid )
-            data.fbclid = this.params.fbclid;
 
         if ( this.checkCookie( 'attr_first' ) ) {
 
@@ -423,7 +373,7 @@ Attributor.prototype = {
             expireDate.setTime( expireDate.getTime() + ( expiresIn * 60 * 1000 ) );
         }
 
-        document.cookie = name + '=' + encodeURIComponent( JSON.stringify( value ) ) + ( ( expiresIn == null ) ? '' : '; domain=.' + this.cookieDomain + '; expires=' + expireDate.toUTCString() ) + '; path=/';
+        document.cookie = name + '=' + encodeURIComponent( JSON.stringify( value ) ) + ( ( expiresIn == null ) ? '' : '; domain=.' + this.config.cookieDomain + '; expires=' + expireDate.toUTCString() ) + '; path=/';
 
     },
     
@@ -436,7 +386,7 @@ Attributor.prototype = {
 		    if ( !this.fieldMap.cookies.hasOwnProperty(prop) )
 		    	continue;
 		    
-		    cookies[prop] = ( this.filters[prop] ) ? this.filters[prop](this.getCookie(prop, false)) : this.getCookie(prop, false);
+		    cookies[prop] = ( this.config.filters[prop] ) ? this.config.filters[prop](this.getCookie(prop, false)) : this.getCookie(prop, false);
 		    
 	    }
 	    
@@ -455,9 +405,9 @@ Attributor.prototype = {
 		    	
 		    var global = prop.split('.');
 		    
-            try{
-		        globals[prop] = window[global[0]][global[1]];
-            } catch(err){}
+        try{
+          globals[prop] = window[global[0]][global[1]];
+        } catch(err){}
 		    
 	    }
 	    
