@@ -2,7 +2,7 @@
 
 ### Purpose
 
-Emulates old 1st party cookies set for source/medium/campaign/term/content in Classic Google Analytics (ga.js). Easily fill hidden form fields with the stored values of your first and last touch data (great for closed-loop/ROAS reporting needs). This script is meant to be a standardized means of implementing UTM cookies for campaign attribution.
+Emulates old 1st party cookies set for `utm_`(`source`, `medium`, `campaign`, `term`, `content`) + the 3 new `source_platform`, `marketing_tactic`, `creative_format` parameters in Classic Google Analytics (ga.js). Easily fill hidden form fields with the stored values of your first and last touch data (great for closed-loop/ROAS reporting needs). This script is meant to be a standardized means of implementing UTM cookies for campaign attribution.
 
 
 ### What data is stored?
@@ -19,9 +19,10 @@ Each of these cookies contains an encoded JSON object of key:value pairs for the
 - campaign
 - term
 - content
+- source_platform
+- marketing_tactic
+- creative_format
 - adgroup
-- gclid
-- fbclid
 - date
 - lp
 
@@ -34,8 +35,11 @@ This can be done via a custom HTML tag inside of Google Tag Manager - or you can
 
 
 #### Creating an Attributor instance
+The `Attributor` contructor accepts a single configuration object - the library uses sensible defaults, so you only need to override what configuration options you need to change.
 
-    var __utmz = new Attributor('mydomain.com');
+    var __utmz = new Attributor({
+      cookieDomain: 'domain.com'
+    });
 
 #### Default Field Mapping
 Attributor uses sensible defaults for field mapping. Fields are mapped per cookie using HTML `<input>` `name` attributes. The script can easily be modified to use classes for field mapping. The default field mapping is defined as a simple object literal:
@@ -47,9 +51,10 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
             campaign: 'utm_campaign_1st',
             term: 'utm_term_1st',
             content: 'utm_content_1st',
+            source_platform: 'utm_source_platform_1st',
+            marketing_tactic: 'utm_marketing_tactic_1st',
+            creative_format: 'utm_creative_format_1st',
             adgroup: 'utm_adgroup_1st',
-            gclid: 'gclid_1st',
-            fbclid: 'fbclid_1st',
             lp: 'lp_1st',
             date: 'date_1st'
         },
@@ -59,9 +64,10 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
             campaign: 'utm_campaign',
             term: 'utm_term',
             content: 'utm_content',
+            source_platform: 'utm_source_platform',
+            marketing_tactic: 'utm_marketing_tactic',
+            creative_format: 'utm_creative_format',
             adgroup: 'utm_adgroup',
-            gclid: 'gclid',
-            fbclid: 'fbclid',
             lp: 'lp_last',
             date: 'date_last'
         },
@@ -72,6 +78,7 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
         },
         globals: {
             'navigator.user_agent': 'user_agent',
+            'document.referrer': 'referrer',
             'location.href': 'conversion_url'
         }
     }
@@ -84,9 +91,10 @@ This means that if you were to use the following hidden field markup - you need 
     <input type="hidden" name="utm_campaign">
     <input type="hidden" name="utm_term">
     <input type="hidden" name="utm_content">
+    <input type="hidden" name="utm_source_platform">
+    <input type="hidden" name="utm_marketing_tactic">
+    <input type="hidden" name="utm_creative_format">
     <input type="hidden" name="utm_adgroup">
-    <input type="hidden" name="gclid">
-    <input type="hidden" name="fbclid">
     <input type="hidden" name="lp_last">
     <input type="hidden" name="date_last">
 
@@ -96,25 +104,30 @@ This means that if you were to use the following hidden field markup - you need 
     <input type="hidden" name="utm_campaign_1st">
     <input type="hidden" name="utm_term_1st">
     <input type="hidden" name="utm_content_1st">
+    <input type="hidden" name="utm_source_platform_1st">
+    <input type="hidden" name="utm_marketing_tactic_1st">
+    <input type="hidden" name="utm_creative_format_1st">
     <input type="hidden" name="utm_adgroup_1st">
-    <input type="hidden" name="gclid_1st">
-    <input type="hidden" name="fbclid_1st">
     <input type="hidden" name="lp_1st">
     <input type="hidden" name="date_1st">
 
     <!-- cookies -->
     <input type="hidden" name="ga">
+    <input type="hidden" name="gclid">
     <input type="hidden" name="fbp">
     <input type="hidden" name="fbc">
 
     <!-- globals -->
     <input type="hidden" name="user_agent">
+    <input type="hidden" name="referrer">
     <input type="hidden" name="conversion_url">
 
 #### Defining a custom field map
-If you cannot (or wish not to) use the default field mapping. You can easily create your own by passing in a second argument to the `Attributor` constructor to override the default field mapping:
+If you cannot (or wish not to) use the default field mapping. You can easily create your own by defining you own `fieldMap` in the configuration object passed to the `Attributor` constructor. Custom field mappings are merged into the default `fieldMap` object.
 
-    var __utmz = new Attributor('mydomain.com', {
+    var __utmz = new Attributor(
+      cookieDomain: 'domain.com',
+      fieldMap: {
         first: {
             source: 'source_1st',
             medium: 'medium_1st',
@@ -129,22 +142,30 @@ If you cannot (or wish not to) use the default field mapping. You can easily cre
             term: 'term_last',
             content: 'content_last',
         }
+      }
     });
 
-If you only need/wish to change a couple of the default field mappings - you can set those explicitly without affecting the other defaults:
+If you only need/wish to change a few of the default field mappings - you can set those explicitly without affecting the other defaults:
 
-    var __utmz = new Attributor('mydomain.com', {
+    var __utmz = new Attributor({
+      cookieDomain: 'mydomain.com',
+      fieldMap: {
         cookies: {
             _ga: 'ga_client_id'
         }
+      }
     });
-    
+
+#### Filters
+
+The library has some predefined filters to handle filtering the cookie and global values. Note - these filters only work on the `cookies` and 
+
 #### Prefilling
 The script will automatically run it's `Attributor.fillFormFields()` method when initialized.
 
 You can also manually call the method as such:
 
-    var __utmz = new Attributor('mydomain.com');
+    var __utmz = new Attributor(config);
     __utmz.fillFormFields();
 
 This can be helpful for a few scenarios
@@ -178,11 +199,15 @@ By default, Attributor will use `<input>` `name` attributes for updating/prefill
 For example:
 
     // JavaScript
-    var __utmz = new Attributor('mydomain.com', {
+    var __utmz = new Attributor({
+      cookieDomain: 'mydomain.com', 
+      fieldTargetMethod: 'class',
+      fieldMap: {
         last: {
             source: 'custom_source_last'
         }
-    }, 'class');
+      }
+    });
 
     <!-- HTML -->
     <input type="hidden" name="input_9a8dfs" class="custom_source_last">

@@ -17,7 +17,7 @@ module.exports = function( grunt ) {
 
 		uglify: {
 			options: {
-				banner: '/*! \n * <%= pkg.name %> v<%= pkg.version %>\n * <%= pkg.repo %>\n * \n * Copyright (c) 2018 Derek Cavaliero @ WebMechanix\n * \n * Date: <%= grunt.template.today("yyyy-mm-dd HH:MM:ss Z") %> \n */\n',
+				banner: '/*! \n * <%= pkg.name %>.js v<%= pkg.version %> \n * <%= pkg.repo %>\n * © 2018-<%= grunt.template.today("yyyy") %> Derek Cavaliero @ WebMechanix\n * Updated: <%= grunt.template.today("yyyy-mm-dd HH:MM:ss Z") %> \n */\n',
 			},
 			dist: {
 				options: {
@@ -40,7 +40,7 @@ module.exports = function( grunt ) {
 					compress: false, // renames variables and all that
 					mangle: false,
 					compress: {
-						drop_console: true
+						drop_console: false
 					}
 				},
 				files: {
@@ -57,7 +57,7 @@ module.exports = function( grunt ) {
 				tasks	   : [ 'build' ]
 			},
 			options: {
-				livereload : true
+				livereload : false
 			},
 			scripts: {
 				files      : [ '<%= project.src.js %>/**/*.js' ],
