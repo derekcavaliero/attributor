@@ -236,7 +236,7 @@ Attributor.prototype = {
         continue;
       
       try{
-        globals[prop] = resolve(prop);
+        globals[prop] = this.resolve(prop);
       } catch(err){}
       
     }
@@ -496,21 +496,6 @@ Attributor.prototype = {
 
   updateSession: function() {
 
-    var data = {
-        source: '(direct)',
-        medium: '(none)',
-        campaign: '(not set)',
-        term: '(not provided)',
-        content: '(not set)',
-        source_platform: '(not set)',
-        marketing_tactic: '(not set)',
-        creative_format: '(not set)',
-        adgroup: '(not set)',
-        lp: window.location.hostname + window.location.pathname,
-        date: this.formatDate(),
-        timestamp: Date.now()
-    };
-
     /**
      * Parsing logic:
      * 1. Set sensible defaults to match GA defaults.
@@ -520,6 +505,21 @@ Attributor.prototype = {
      *    and it isn't determined to be direct (empty referrer or referrer is on the same root domain) - the source/medium will be set as hostname/referrer
      * 3. Direct should NEVER overwrite an existing non-direct session. (aka. referrer is direct, skip referrer parsing)
      */
+
+    var data = {
+      source: '(direct)',
+      medium: '(none)',
+      campaign: '(not set)',
+      term: '(not provided)',
+      content: '(not set)',
+      source_platform: '(not set)',
+      marketing_tactic: '(not set)',
+      creative_format: '(not set)',
+      adgroup: '(not set)',
+      lp: window.location.hostname + window.location.pathname,
+      date: this.formatDate(),
+      timestamp: Date.now()
+    };
 
     var parameters = this.parseParameters();
     var referrer = parameters.hasOwnProperty('source') && parameters.hasOwnProperty('medium') ? {} : this.parseReferrer();

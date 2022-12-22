@@ -2,7 +2,7 @@
  * attributor.js v2.0 
  * https://github.com/derekcavaliero/attributor
  * © 2018-2022 Derek Cavaliero @ WebMechanix
- * Updated: 2022-11-22 08:14:16 PST 
+ * Updated: 2022-12-21 18:44:09 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -131,7 +131,7 @@ Attributor = function(config) {
     getGlobalValues: function() {
         var globals = {};
         for (var prop in this.config.fieldMap.globals) if (this.config.fieldMap.globals.hasOwnProperty(prop)) try {
-            globals[prop] = resolve(prop);
+            globals[prop] = this.resolve(prop);
         } catch (err) {}
         return globals;
     },
