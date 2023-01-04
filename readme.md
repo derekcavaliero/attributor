@@ -22,7 +22,6 @@ Each of these cookies contains an encoded JSON object of key:value pairs for the
 - source_platform
 - marketing_tactic
 - creative_format
-- adgroup
 - date
 - lp
 
@@ -72,9 +71,13 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
             date: 'date_last'
         },
         cookies: {
-            _ga: 'ga',
-            _fbp: 'fbp',
-            _fbc: 'fbc'
+            _fbc: 'fbc',            // Facebook Ads Click ID
+            _fbp: 'fbp',            // Facebook Ads Browser ID
+            _ga: 'ga',              // Google Analytics Client ID
+            _gcl_aw: 'gclid',       // Google Ads Click ID
+            _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
+            li_fat_id: 'li_fat_id', // LinkedIn Click ID
+            ttclid: 'ttclid'        // TikTok Ads Click ID
         },
         globals: {
             'navigator.user_agent': 'user_agent',
@@ -116,6 +119,9 @@ This means that if you were to use the following hidden field markup - you need 
     <input type="hidden" name="gclid">
     <input type="hidden" name="fbp">
     <input type="hidden" name="fbc">
+    <input type="hidden" name="msclkid">
+    <input type="hidden" name="li_fat_id">
+    <input type="hidden" name="ttclid">
 
     <!-- globals -->
     <input type="hidden" name="user_agent">
@@ -190,7 +196,7 @@ This can be helpful for a few scenarios
     }
 
 #### Changing the Prefill Target Method
-By default, Attributor will use `<input>` `name` attributes for updating/prefilling. This can be customized when initializing attributor using the 3rd parameter `fieldTargetMethod`.
+By default, Attributor will use `<input>` `name` attributes for updating/prefilling. This can be customized when initializing attributor using the `fieldTargetMethod` property.
 
 - `name` (default) - uses `document.getElementsByName('{field_map_key}')`
 - `class` - uses `document.querySelectorAll('input.{field_map_key}')`
