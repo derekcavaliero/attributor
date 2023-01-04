@@ -164,7 +164,15 @@ If you only need/wish to change a few of the default field mappings - you can se
 
 #### Filters
 
-The library has some predefined filters to handle filtering the cookie and global values. Note - these filters only work on the `cookies` and 
+The library has some predefined filters to handle filtering the cookie and global values. Note - these filters _only_ work on the `cookies` and `globals`. You can define filters using the `filters` property in the configuration object. For example the following filter will remove the first two delimited values from the `_ga` cookie. The filter property name _must_ match the name of the cookie.
+
+    filters: {
+      _ga: function(val) {
+        // e.g: GA1.2.1234567890.0987654321
+        // Should return 1234567890.0987654321
+        return val.split('.').slice(2).join('.');
+      }
+    }
 
 #### Prefilling
 The script will automatically run it's `Attributor.fillFormFields()` method when initialized.
