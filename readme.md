@@ -43,97 +43,102 @@ The `Attributor` contructor accepts a single configuration object - the library 
 #### Default Field Mapping
 Attributor uses sensible defaults for field mapping. Fields are mapped per cookie using HTML `<input>` `name` attributes. The script can easily be modified to use classes for field mapping. The default field mapping is defined as a simple object literal:
 
-    {
-        first: {
-            source: 'utm_source_1st',
-            medium: 'utm_medium_1st',
-            campaign: 'utm_campaign_1st',
-            term: 'utm_term_1st',
-            content: 'utm_content_1st',
-            source_platform: 'utm_source_platform_1st',
-            marketing_tactic: 'utm_marketing_tactic_1st',
-            creative_format: 'utm_creative_format_1st',
-            adgroup: 'utm_adgroup_1st',
-            lp: 'lp_1st',
-            date: 'date_1st'
-        },
-        last: {
-            source: 'utm_source',
-            medium: 'utm_medium',
-            campaign: 'utm_campaign',
-            term: 'utm_term',
-            content: 'utm_content',
-            source_platform: 'utm_source_platform',
-            marketing_tactic: 'utm_marketing_tactic',
-            creative_format: 'utm_creative_format',
-            adgroup: 'utm_adgroup',
-            lp: 'lp_last',
-            date: 'date_last'
-        },
-        cookies: {
-            _fbc: 'fbc',            // Facebook Ads Click ID
-            _fbp: 'fbp',            // Facebook Ads Browser ID
-            _ga: 'ga',              // Google Analytics Client ID
-            _gcl_aw: 'gclid',       // Google Ads Click ID
-            _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
-            li_fat_id: 'li_fat_id', // LinkedIn Click ID
-            ttclid: 'ttclid'        // TikTok Ads Click ID
-        },
-        globals: {
-            'navigator.user_agent': 'user_agent',
-            'document.referrer': 'referrer',
-            'location.href': 'conversion_url'
-        }
+```javascript
+{
+    first: {
+        source: 'utm_source_1st',
+        medium: 'utm_medium_1st',
+        campaign: 'utm_campaign_1st',
+        term: 'utm_term_1st',
+        content: 'utm_content_1st',
+        source_platform: 'utm_source_platform_1st',
+        marketing_tactic: 'utm_marketing_tactic_1st',
+        creative_format: 'utm_creative_format_1st',
+        adgroup: 'utm_adgroup_1st',
+        lp: 'lp_1st',
+        date: 'date_1st'
+    },
+    last: {
+        source: 'utm_source',
+        medium: 'utm_medium',
+        campaign: 'utm_campaign',
+        term: 'utm_term',
+        content: 'utm_content',
+        source_platform: 'utm_source_platform',
+        marketing_tactic: 'utm_marketing_tactic',
+        creative_format: 'utm_creative_format',
+        adgroup: 'utm_adgroup',
+        lp: 'lp_last',
+        date: 'date_last'
+    },
+    cookies: {
+        _fbc: 'fbc',            // Facebook Ads Click ID
+        _fbp: 'fbp',            // Facebook Ads Browser ID
+        _ga: 'ga',              // Google Analytics Client ID
+        _gcl_aw: 'gclid',       // Google Ads Click ID
+        _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
+        li_fat_id: 'li_fat_id', // LinkedIn Click ID
+        ttclid: 'ttclid'        // TikTok Ads Click ID
+    },
+    globals: {
+        'navigator.user_agent': 'user_agent',
+        'document.referrer': 'referrer',
+        'location.href': 'conversion_url'
     }
+}
+```
 
 This means that if you were to use the following hidden field markup - you need not configure any custom field mapping object:
 
-    <!-- last -->
-    <input type="hidden" name="utm_source">
-    <input type="hidden" name="utm_medium">
-    <input type="hidden" name="utm_campaign">
-    <input type="hidden" name="utm_term">
-    <input type="hidden" name="utm_content">
-    <input type="hidden" name="utm_source_platform">
-    <input type="hidden" name="utm_marketing_tactic">
-    <input type="hidden" name="utm_creative_format">
-    <input type="hidden" name="utm_adgroup">
-    <input type="hidden" name="lp_last">
-    <input type="hidden" name="date_last">
+```html
+<!-- last -->
+<input type="hidden" name="utm_source">
+<input type="hidden" name="utm_medium">
+<input type="hidden" name="utm_campaign">
+<input type="hidden" name="utm_term">
+<input type="hidden" name="utm_content">
+<input type="hidden" name="utm_source_platform">
+<input type="hidden" name="utm_marketing_tactic">
+<input type="hidden" name="utm_creative_format">
+<input type="hidden" name="utm_adgroup">
+<input type="hidden" name="lp_last">
+<input type="hidden" name="date_last">
 
-    <!-- first -->
-    <input type="hidden" name="utm_source_1st">
-    <input type="hidden" name="utm_medium_1st">
-    <input type="hidden" name="utm_campaign_1st">
-    <input type="hidden" name="utm_term_1st">
-    <input type="hidden" name="utm_content_1st">
-    <input type="hidden" name="utm_source_platform_1st">
-    <input type="hidden" name="utm_marketing_tactic_1st">
-    <input type="hidden" name="utm_creative_format_1st">
-    <input type="hidden" name="utm_adgroup_1st">
-    <input type="hidden" name="lp_1st">
-    <input type="hidden" name="date_1st">
+<!-- first -->
+<input type="hidden" name="utm_source_1st">
+<input type="hidden" name="utm_medium_1st">
+<input type="hidden" name="utm_campaign_1st">
+<input type="hidden" name="utm_term_1st">
+<input type="hidden" name="utm_content_1st">
+<input type="hidden" name="utm_source_platform_1st">
+<input type="hidden" name="utm_marketing_tactic_1st">
+<input type="hidden" name="utm_creative_format_1st">
+<input type="hidden" name="utm_adgroup_1st">
+<input type="hidden" name="lp_1st">
+<input type="hidden" name="date_1st">
 
-    <!-- cookies -->
-    <input type="hidden" name="ga">
-    <input type="hidden" name="gclid">
-    <input type="hidden" name="fbp">
-    <input type="hidden" name="fbc">
-    <input type="hidden" name="msclkid">
-    <input type="hidden" name="li_fat_id">
-    <input type="hidden" name="ttclid">
+<!-- cookies -->
+<input type="hidden" name="ga">
+<input type="hidden" name="gclid">
+<input type="hidden" name="fbp">
+<input type="hidden" name="fbc">
+<input type="hidden" name="msclkid">
+<input type="hidden" name="li_fat_id">
+<input type="hidden" name="ttclid">
 
-    <!-- globals -->
-    <input type="hidden" name="user_agent">
-    <input type="hidden" name="referrer">
-    <input type="hidden" name="conversion_url">
+<!-- globals -->
+<input type="hidden" name="user_agent">
+<input type="hidden" name="referrer">
+<input type="hidden" name="conversion_url">
+```
 
 #### Defining a custom field map
 If you cannot (or wish not to) use the default field mapping. You can easily create your own by defining you own `fieldMap` in the configuration object passed to the `Attributor` constructor. Custom field mappings are merged into the default `fieldMap` object.
 
-    var __utmz = new Attributor(
-      cookieDomain: 'domain.com',
-      fieldMap: {
+```javascript
+var __utmz = new Attributor({
+    cookieDomain: 'domain.com',
+    fieldMap: {
         first: {
             source: 'source_1st',
             medium: 'medium_1st',
@@ -148,39 +153,46 @@ If you cannot (or wish not to) use the default field mapping. You can easily cre
             term: 'term_last',
             content: 'content_last',
         }
-      }
-    });
+    }
+});
+```
 
 If you only need/wish to change a few of the default field mappings - you can set those explicitly without affecting the other defaults:
 
-    var __utmz = new Attributor({
-      cookieDomain: 'mydomain.com',
-      fieldMap: {
+```javascript
+var __utmz = new Attributor({
+    cookieDomain: 'mydomain.com',
+    fieldMap: {
         cookies: {
             _ga: 'ga_client_id'
         }
-      }
-    });
+    }
+});
+```
 
 #### Filters
 
 The library has some predefined filters to handle filtering the cookie and global values. Note - these filters _only_ work on the `cookies` and `globals`. You can define filters using the `filters` property in the configuration object. For example the following filter will remove the first two delimited values from the `_ga` cookie. The filter property name _must_ match the name of the cookie.
 
-    filters: {
-      _ga: function(val) {
+```javascript
+filters: {
+    _ga: function(val) {
         // e.g: GA1.2.1234567890.0987654321
         // Should return 1234567890.0987654321
         return val.split('.').slice(2).join('.');
-      }
     }
+}
+```
 
 #### Prefilling
 The script will automatically run it's `Attributor.fillFormFields()` method when initialized.
 
 You can also manually call the method as such:
 
-    var __utmz = new Attributor(config);
-    __utmz.fillFormFields();
+```javascript
+var __utmz = new Attributor(config);
+__utmz.fillFormFields();
+```
 
 This can be helpful for a few scenarios
 
@@ -189,19 +201,23 @@ This can be helpful for a few scenarios
 
 ##### HubSpot
 
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'hsFormCallback' && event.data.eventName === 'onFormReady') {
-            __utmz.fillFormFields();
-        }
-    });
+```javascript
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'hsFormCallback' && event.data.eventName === 'onFormReady') {
+        __utmz.fillFormFields();
+    }
+});
+```
 
 ##### Marketo
 
-    if (typeof MktoForms2 !== 'undefined') {
-        MktoForms2.whenReady( function( form ) {
-            __utmz.fillFormFields();
-        });
-    }
+```javascript
+if (typeof MktoForms2 !== 'undefined') {
+    MktoForms2.whenReady( function( form ) {
+        __utmz.fillFormFields();
+    });
+}
+```
 
 #### Changing the Prefill Target Method
 By default, Attributor will use `<input>` `name` attributes for updating/prefilling. This can be customized when initializing attributor using the `fieldTargetMethod` property.
@@ -212,16 +228,18 @@ By default, Attributor will use `<input>` `name` attributes for updating/prefill
 
 For example:
 
-    // JavaScript
-    var __utmz = new Attributor({
-      cookieDomain: 'mydomain.com', 
-      fieldTargetMethod: 'class',
-      fieldMap: {
+```javascript
+var __utmz = new Attributor({
+    cookieDomain: 'mydomain.com', 
+    fieldTargetMethod: 'class',
+    fieldMap: {
         last: {
             source: 'custom_source_last'
         }
-      }
-    });
+    }
+});
+```
 
-    <!-- HTML -->
-    <input type="hidden" name="input_9a8dfs" class="custom_source_last">
+```html
+<input type="hidden" name="input_9a8dfs" class="custom_source_last">
+```
