@@ -2,7 +2,7 @@
 
 ### Purpose
 
-Emulates old 1st party cookies set for `utm_`(`source`, `medium`, `campaign`, `term`, `content`) + the 3 new `source_platform`, `marketing_tactic`, `creative_format` parameters in Classic Google Analytics (ga.js). Easily fill hidden form fields with the stored values of your first and last touch data (great for closed-loop/ROAS reporting needs). This script is meant to be a standardized means of implementing UTM cookies for campaign attribution.
+Emulates old 1st party cookies set for `utm_`(`source`, `medium`, `campaign`, `term`, `content`, `id`) + the 3 new `source_platform`, `marketing_tactic`, `creative_format` parameters in Classic Google Analytics (ga.js). Easily fill hidden form fields with the stored values of your first and last touch data (great for closed-loop/ROAS reporting needs). This script is meant to be a standardized means of implementing UTM cookies for campaign attribution.
 
 
 ### What data is stored?
@@ -19,11 +19,10 @@ Each of these cookies contains an encoded JSON object of key:value pairs for the
 - campaign
 - term
 - content
+- id
 - source_platform
 - marketing_tactic
 - creative_format
-- date
-- lp
 
 Most the the data points above are pulled from standard UTM parameters or are given values via referral parsing and/or general metadata (date/lp).
 
@@ -55,8 +54,7 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
         marketing_tactic: 'utm_marketing_tactic_1st',
         creative_format: 'utm_creative_format_1st',
         adgroup: 'utm_adgroup_1st',
-        lp: 'lp_1st',
-        date: 'date_1st'
+        id: 'utm_id_1st'
     },
     last: {
         source: 'utm_source',
@@ -68,23 +66,10 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
         marketing_tactic: 'utm_marketing_tactic',
         creative_format: 'utm_creative_format',
         adgroup: 'utm_adgroup',
-        lp: 'lp_last',
-        date: 'date_last'
+        id: 'utm_id'
     },
-    cookies: {
-        _fbc: 'fbc',            // Facebook Ads Click ID
-        _fbp: 'fbp',            // Facebook Ads Browser ID
-        _ga: 'ga',              // Google Analytics Client ID
-        _gcl_aw: 'gclid',       // Google Ads Click ID
-        _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
-        li_fat_id: 'li_fat_id', // LinkedIn Click ID
-        ttclid: 'ttclid'        // TikTok Ads Click ID
-    },
-    globals: {
-        'navigator.user_agent': 'user_agent',
-        'document.referrer': 'referrer',
-        'location.href': 'conversion_url'
-    }
+    cookies: {},
+    globals: {}
 }
 ```
 
@@ -101,8 +86,7 @@ This means that if you were to use the following hidden field markup - you need 
 <input type="hidden" name="utm_marketing_tactic">
 <input type="hidden" name="utm_creative_format">
 <input type="hidden" name="utm_adgroup">
-<input type="hidden" name="lp_last">
-<input type="hidden" name="date_last">
+<input type="hidden" name="utm_id">
 
 <!-- first -->
 <input type="hidden" name="utm_source_1st">
@@ -114,22 +98,7 @@ This means that if you were to use the following hidden field markup - you need 
 <input type="hidden" name="utm_marketing_tactic_1st">
 <input type="hidden" name="utm_creative_format_1st">
 <input type="hidden" name="utm_adgroup_1st">
-<input type="hidden" name="lp_1st">
-<input type="hidden" name="date_1st">
-
-<!-- cookies -->
-<input type="hidden" name="ga">
-<input type="hidden" name="gclid">
-<input type="hidden" name="fbp">
-<input type="hidden" name="fbc">
-<input type="hidden" name="msclkid">
-<input type="hidden" name="li_fat_id">
-<input type="hidden" name="ttclid">
-
-<!-- globals -->
-<input type="hidden" name="user_agent">
-<input type="hidden" name="referrer">
-<input type="hidden" name="conversion_url">
+<input type="hidden" name="utm_id_1st">
 ```
 
 #### Defining a custom field map
@@ -172,7 +141,7 @@ var __utmz = new Attributor({
 
 #### Filters
 
-The library has some predefined filters to handle filtering the cookie and global values. Note - these filters _only_ work on the `cookies` and `globals`. You can define filters using the `filters` property in the configuration object. For example the following filter will remove the first two delimited values from the `_ga` cookie. The filter property name _must_ match the name of the cookie.
+The library has some predefined filters to handle filtering the cookie and global values. Note - these filters _only_ work on the `cookies` and `globals`. You can define filters using the `filters` property in the configuration object. For example the following filter will remove the first two delimited values from the `_ga` cookie. The filter property name _must_ match the name of the cookie or global window path reference.
 
 ```javascript
 filters: {
