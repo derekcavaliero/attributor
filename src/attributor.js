@@ -6,6 +6,7 @@ Attributor = function(config) {
       first: 'attr_first',
       last: 'attr_last'
     },
+    decorateHostnames: [],
     enableSpaSupport: false,
     fieldMap: {
       first: {
@@ -18,8 +19,7 @@ Attributor = function(config) {
         marketing_tactic: 'utm_marketing_tactic_1st',
         creative_format: 'utm_creative_format_1st',
         adgroup: 'utm_adgroup_1st',
-        lp: 'lp_1st',
-        date: 'date_1st'
+        id: 'utm_id_1st'
       },
       last: {
         source: 'utm_source',
@@ -31,42 +31,25 @@ Attributor = function(config) {
         marketing_tactic: 'utm_marketing_tactic',
         creative_format: 'utm_creative_format',
         adgroup: 'utm_adgroup',
-        lp: 'lp_last',
-        date: 'date_last'
+        id: 'utm_id'
       },
-      cookies: {
-        _fbc: 'fbc',            // Facebook Ads Click ID
-        _fbp: 'fbp',            // Facebook Ads Browser ID
-        _ga: 'ga',              // Google Analytics Client ID
-        _gcl_aw: 'gclid',       // Google Ads Click ID
-        _uetmsclkid: 'msclkid', // Bing/Microsoft Ads Click ID
-        li_fat_id: 'li_fat_id', // LinkedIn Click ID
-        ttclid: 'ttclid'        // TikTok Ads Click ID
-      },
-      globals: {
-        'navigator.userAgent': 'user_agent',
-        'location.href': 'conversion_url',
-        'document.referrer': 'referrer'
-      }
+      cookies: {},
+      globals: {}
     },
     fieldTargetMethod: 'name',
     filters: {
-      _ga: function(val) {
-        // e.g: GA1.2.1234567890.0987654321
-        // Should return 1234567890.0987654321
-        return val.split('.').slice(2).join('.');
+      'location.href': function(val) {
+        // e.g: https://www.example.com/path?query=string
+        // Should return https://www.example.com/path
+        return val.split('?')[0];
       },
-      _gcl_aw: function(val) {
-        // e.g: GCL.1645197936.xxxxxxxGCLIDxxxxxxx
-        // Should return xxxxxxxGCLIDxxxxxxx
-        return val.split('.').slice(2).join('.');
-      },
-      _uetmsclkid: function(val) {
-        // e.g: _uetxxxxxxxMSCLKIDxxxxxxx
-        // Should return xxxxxxxMSCLKIDxxxxxxx
-        return val.slice(4);
+      'document.referrer': function(val) {
+        // e.g: https://www.example.com/path?query=string
+        // Should return https://www.example.com/path
+        return val.split('?')[0];
       }
     },
+    nullValue: '(not set)',
     sessionTimeout: 30
   };
   
@@ -108,9 +91,57 @@ Attributor.prototype = {
 
   },
 
-  fillFormFields: function(targetMethod)  {
+  getAll: function(multitouch) {
 
-    var targetMethod = typeof targetMethod !== 'undefined' ? targetMethod : this.config.fieldTargetMethod;
+      var multitouch = typeof multitouch !== 'undefined' ? multitouch : true;
+
+      var data = {
+        cookies: this.getCookieValues(),
+        globals: this.getGlobalValues()
+      };
+      
+      for (var key in this.config.fieldMap) {
+
+        if (!this.config.fieldMap.hasOwnProperty(key) || !data.hasOwnProperty(key)) 
+          continue;
+  
+        for (var prop in this.config.fieldMap[key]) {
+  
+          if (!this.config.fieldMap[key].hasOwnProperty(prop)) 
+            continue;
+
+          if (data[key][prop] && data[key][prop] != this.config.nullValue)
+            data[key][this.config.fieldMap[key][prop]] = data[key][prop];
+
+          delete data[key][prop];
+
+        }
+
+      }
+
+      var campaign = multitouch ? {
+        first: this.session.first,
+        last: this.session.last
+      } : this.session.last;
+
+      return Object.assign(
+        {
+          campaign: campaign
+        },
+        data.cookies, 
+        data.globals
+      );
+
+  },
+
+  fillFormFields: function(settings)  {
+
+    var settings = typeof settings === 'object' ? settings : {};
+
+    var query = {
+      targetMethod: settings.targetMethod || this.config.fieldTargetMethod,
+      scope: settings.scope || document
+    };
 
     var data = {
       _params: this.params,
@@ -133,19 +164,19 @@ Attributor.prototype = {
         var fields;
         var field = this.config.fieldMap[key][prop];
 
-        switch (targetMethod) {
+        switch (query.targetMethod) {
 
           case 'class':
-            fields = document.querySelectorAll('input.' + field);
+            fields = query.scope.querySelectorAll('input.' + field);
           break;
 
           case 'parentClass':
-            fields = document.querySelectorAll('.' + field + ' input');
+            fields = query.scope.querySelectorAll('.' + field + ' input');
           break;
 
           case 'name':
           default:
-            fields = document.getElementsByName(field);
+            fields = query.scope.querySelectorAll('input[name="' + field + '"]');
           break;
 
         }
@@ -154,27 +185,16 @@ Attributor.prototype = {
           continue;
         
         for (var i = 0; i < fields.length; i++) {
-          if (data[key].hasOwnProperty(prop) && data[key][prop] != '')
+          if (data[key].hasOwnProperty(prop) && data[key][prop] != '') {
             fields[i].value = data[key][prop];
+            fields[i].dispatchEvent(new Event('input', { bubbles: true }));
+          }
         }
       
 
       }
 
     }
-
-  },
-
-  formatDate: function() {
-
-    var today = new Date();
-    var dd = today.getDate();
-    var mm = today.getMonth() + 1; //January is 0!
-
-    mm = ( mm < 10 ) ? '0' + mm : mm;
-    var yyyy = today.getFullYear();
-
-    return yyyy + '-' + mm + '-' + dd;
 
   },
 
@@ -218,6 +238,7 @@ Attributor.prototype = {
       if (!this.config.fieldMap.cookies.hasOwnProperty(prop))
         continue;
       
+      // @CONSIDER: wrap in try/catch to avoid poor filter design that throw execeptions.
       cookies[prop] = typeof this.config.filters[prop] === 'function' ? this.config.filters[prop](this.getCookie(prop, false)) : this.getCookie(prop, false);
       
     }
@@ -236,7 +257,7 @@ Attributor.prototype = {
         continue;
       
       try{
-        globals[prop] = this.resolve(prop);
+        globals[prop] = typeof this.config.filters[prop] === 'function' ? this.config.filters[prop](this.resolve(prop)) : this.resolve(prop);
       } catch(err){}
       
     }
@@ -283,7 +304,8 @@ Attributor.prototype = {
       'source_platform', 
       'marketing_tactic', 
       'creative_format', 
-      'adgroup'
+      'adgroup',
+      'id'
     ].forEach(function(item) { 
         
       var parameter = 'utm_' + item;
@@ -298,7 +320,7 @@ Attributor.prototype = {
 
       // @CONSIDER: we might want to allow for overriding these rules through the config
       var cpc = {
-        google: ['gclid', 'gclsrc', 'dclid'],
+        google: ['gclid', 'gclsrc', 'dclid', 'wbraid', 'gad_source'],
         facebook: 'fbclid',
         bing: 'msclkid',
         linkedin: 'li_fat_id',
@@ -461,14 +483,36 @@ Attributor.prototype = {
 
     }
 
-    document.addEventListener('click', function(e) {
-
-      if (!e.target.matches('input[type="submit"], button[type="submit"]')) 
+    function fillBeforeSubmit(e) {
+      if (!e.target.matches('[type="submit"]')) 
         return;
 
-      _self.fillFormFields();
+      _self.fillFormFields({
+        scope: e.target.form || e.target.closest('form')
+      });
+    }
 
-    });
+    document.addEventListener('click', fillBeforeSubmit);
+
+    function decorateLinks(e) {
+      
+      if (!e.target.matches('a')) 
+        return;
+
+      var url = new URL(e.target.href);
+
+      if (_self.config.decorateHostnames.indexOf(url.hostname) === -1)
+        return;
+
+      ['source', 'medium', 'campaign', 'term', 'content', 'id'].forEach(function(param) {
+        url.searchParams.set('utm_' + param, _self.session.last[param]);
+      });
+
+      e.target.href = url.toString();
+
+    }
+
+    document.addEventListener('click', decorateLinks);
 
   },
 
@@ -509,16 +553,14 @@ Attributor.prototype = {
     var data = {
       source: '(direct)',
       medium: '(none)',
-      campaign: '(not set)',
-      term: '(not provided)',
-      content: '(not set)',
-      source_platform: '(not set)',
-      marketing_tactic: '(not set)',
-      creative_format: '(not set)',
-      adgroup: '(not set)',
-      lp: window.location.hostname + window.location.pathname,
-      date: this.formatDate(),
-      timestamp: Date.now()
+      campaign: this.config.nullValue,
+      term: this.config.nullValue,
+      content: this.config.nullValue,
+      source_platform: this.config.nullValue,
+      marketing_tactic: this.config.nullValue,
+      creative_format: this.config.nullValue,
+      adgroup: this.config.nullValue,
+      id: this.config.nullValue
     };
 
     var parameters = this.parseParameters();

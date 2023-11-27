@@ -1,8 +1,8 @@
 /*! 
  * attributor.js v2.0 
  * https://github.com/derekcavaliero/attributor
- * © 2018-2022 Derek Cavaliero @ WebMechanix
- * Updated: 2022-12-21 18:44:09 PST 
+ * © 2018-2023 Derek Cavaliero @ WebMechanix
+ * Updated: 2023-11-27 13:25:54 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -11,6 +11,7 @@ Attributor = function(config) {
             first: "attr_first",
             last: "attr_last"
         },
+        decorateHostnames: [],
         enableSpaSupport: !1,
         fieldMap: {
             first: {
@@ -23,8 +24,7 @@ Attributor = function(config) {
                 marketing_tactic: "utm_marketing_tactic_1st",
                 creative_format: "utm_creative_format_1st",
                 adgroup: "utm_adgroup_1st",
-                lp: "lp_1st",
-                date: "date_1st"
+                id: "utm_id_1st"
             },
             last: {
                 source: "utm_source",
@@ -36,36 +36,21 @@ Attributor = function(config) {
                 marketing_tactic: "utm_marketing_tactic",
                 creative_format: "utm_creative_format",
                 adgroup: "utm_adgroup",
-                lp: "lp_last",
-                date: "date_last"
+                id: "utm_id"
             },
-            cookies: {
-                _fbc: "fbc",
-                _fbp: "fbp",
-                _ga: "ga",
-                _gcl_aw: "gclid",
-                _uetmsclkid: "msclkid",
-                li_fat_id: "li_fat_id",
-                ttclid: "ttclid"
-            },
-            globals: {
-                "navigator.userAgent": "user_agent",
-                "location.href": "conversion_url",
-                "document.referrer": "referrer"
-            }
+            cookies: {},
+            globals: {}
         },
         fieldTargetMethod: "name",
         filters: {
-            _ga: function(val) {
-                return val.split(".").slice(2).join(".");
+            "location.href": function(val) {
+                return val.split("?")[0];
             },
-            _gcl_aw: function(val) {
-                return val.split(".").slice(2).join(".");
-            },
-            _uetmsclkid: function(val) {
-                return val.slice(4);
+            "document.referrer": function(val) {
+                return val.split("?")[0];
             }
         },
+        nullValue: "(not set)",
         sessionTimeout: 30
     };
     this.config = this.deepMerge(_defaults, config), this.referrer = this.setReferrer(), 
@@ -78,8 +63,26 @@ Attributor = function(config) {
         for (var prop in source) source.hasOwnProperty(prop) && source[prop] instanceof Object && Object.assign(source[prop], this.deepMerge(target[prop], source[prop]));
         return Object.assign(target || {}, source), target;
     },
-    fillFormFields: function(targetMethod) {
-        var targetMethod = "undefined" != typeof targetMethod ? targetMethod : this.config.fieldTargetMethod, data = {
+    getAll: function(multitouch) {
+        var multitouch = "undefined" == typeof multitouch || multitouch, data = {
+            cookies: this.getCookieValues(),
+            globals: this.getGlobalValues()
+        };
+        for (var key in this.config.fieldMap) if (this.config.fieldMap.hasOwnProperty(key) && data.hasOwnProperty(key)) for (var prop in this.config.fieldMap[key]) this.config.fieldMap[key].hasOwnProperty(prop) && (data[key][prop] && data[key][prop] != this.config.nullValue && (data[key][this.config.fieldMap[key][prop]] = data[key][prop]), 
+        delete data[key][prop]);
+        var campaign = multitouch ? {
+            first: this.session.first,
+            last: this.session.last
+        } : this.session.last;
+        return Object.assign({
+            campaign: campaign
+        }, data.cookies, data.globals);
+    },
+    fillFormFields: function(settings) {
+        var settings = "object" == typeof settings ? settings : {}, query = {
+            targetMethod: settings.targetMethod || this.config.fieldTargetMethod,
+            scope: settings.scope || document
+        }, data = {
             _params: this.params,
             first: this.session.first,
             last: this.session.last,
@@ -88,27 +91,24 @@ Attributor = function(config) {
         };
         for (var key in this.config.fieldMap) if (this.config.fieldMap.hasOwnProperty(key)) for (var prop in this.config.fieldMap[key]) if (this.config.fieldMap[key].hasOwnProperty(prop)) {
             var fields, field = this.config.fieldMap[key][prop];
-            switch (targetMethod) {
+            switch (query.targetMethod) {
               case "class":
-                fields = document.querySelectorAll("input." + field);
+                fields = query.scope.querySelectorAll("input." + field);
                 break;
 
               case "parentClass":
-                fields = document.querySelectorAll("." + field + " input");
+                fields = query.scope.querySelectorAll("." + field + " input");
                 break;
 
               case "name":
               default:
-                fields = document.getElementsByName(field);
+                fields = query.scope.querySelectorAll('input[name="' + field + '"]');
             }
-            if (fields) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && "" != data[key][prop] && (fields[i].value = data[key][prop]);
+            if (fields) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && "" != data[key][prop] && (fields[i].value = data[key][prop], 
+            fields[i].dispatchEvent(new Event("input", {
+                bubbles: !0
+            })));
         }
-    },
-    formatDate: function() {
-        var today = new Date(), dd = today.getDate(), mm = today.getMonth() + 1;
-        mm = mm < 10 ? "0" + mm : mm;
-        var yyyy = today.getFullYear();
-        return yyyy + "-" + mm + "-" + dd;
     },
     getCookie: function(name, decode) {
         var decode = "undefined" == typeof decode || decode, value = "";
@@ -131,7 +131,7 @@ Attributor = function(config) {
     getGlobalValues: function() {
         var globals = {};
         for (var prop in this.config.fieldMap.globals) if (this.config.fieldMap.globals.hasOwnProperty(prop)) try {
-            globals[prop] = this.resolve(prop);
+            globals[prop] = "function" == typeof this.config.filters[prop] ? this.config.filters[prop](this.resolve(prop)) : this.resolve(prop);
         } catch (err) {}
         return globals;
     },
@@ -147,12 +147,12 @@ Attributor = function(config) {
     parseParameters: function() {
         var _self = this, parsed = {};
         if (!this.parameters) return parsed;
-        if ([ "source", "medium", "campaign", "term", "content", "source_platform", "marketing_tactic", "creative_format", "adgroup" ].forEach(function(item) {
+        if ([ "source", "medium", "campaign", "term", "content", "source_platform", "marketing_tactic", "creative_format", "adgroup", "id" ].forEach(function(item) {
             var parameter = "utm_" + item;
             _self.parameters.has(parameter) && (parsed[item] = _self.parameters.get(parameter));
         }), !this.parameters.has("utm_source") && !this.parameters.has("utm_medium")) {
             var cpc = {
-                google: [ "gclid", "gclsrc", "dclid" ],
+                google: [ "gclid", "gclsrc", "dclid", "wbraid", "gad_source" ],
                 facebook: "fbclid",
                 bing: "msclkid",
                 linkedin: "li_fat_id",
@@ -226,6 +226,19 @@ Attributor = function(config) {
         document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + (null == expires ? "" : "; domain=." + this.config.cookieDomain + "; expires=" + expireDate.toUTCString()) + "; path=/";
     },
     setEventListeners: function() {
+        function fillBeforeSubmit(e) {
+            e.target.matches('[type="submit"]') && _self.fillFormFields({
+                scope: e.target.form || e.target.closest("form")
+            });
+        }
+        function decorateLinks(e) {
+            if (e.target.matches("a")) {
+                var url = new URL(e.target.href);
+                _self.config.decorateHostnames.indexOf(url.hostname) !== -1 && ([ "source", "medium", "campaign", "term", "content", "id" ].forEach(function(param) {
+                    url.searchParams.set("utm_" + param, _self.session.last[param]);
+                }), e.target.href = url.toString());
+            }
+        }
         var _self = this;
         if (this.config.enableSpaSupport) {
             this.monkeyPatchHistory();
@@ -234,9 +247,7 @@ Attributor = function(config) {
             };
             window.addEventListener("popstate", handleSpaNavigation), window.onpopstate = history.onpushstate = handleSpaNavigation;
         }
-        document.addEventListener("click", function(e) {
-            e.target.matches('input[type="submit"], button[type="submit"]') && _self.fillFormFields();
-        });
+        document.addEventListener("click", fillBeforeSubmit), document.addEventListener("click", decorateLinks);
     },
     setParameters: function() {
         var url = new URL(location.href);
@@ -250,16 +261,14 @@ Attributor = function(config) {
         var data = {
             source: "(direct)",
             medium: "(none)",
-            campaign: "(not set)",
-            term: "(not provided)",
-            content: "(not set)",
-            source_platform: "(not set)",
-            marketing_tactic: "(not set)",
-            creative_format: "(not set)",
-            adgroup: "(not set)",
-            lp: window.location.hostname + window.location.pathname,
-            date: this.formatDate(),
-            timestamp: Date.now()
+            campaign: this.config.nullValue,
+            term: this.config.nullValue,
+            content: this.config.nullValue,
+            source_platform: this.config.nullValue,
+            marketing_tactic: this.config.nullValue,
+            creative_format: this.config.nullValue,
+            adgroup: this.config.nullValue,
+            id: this.config.nullValue
         }, parameters = this.parseParameters(), referrer = parameters.hasOwnProperty("source") && parameters.hasOwnProperty("medium") ? {} : this.parseReferrer();
         Object.assign(data, referrer, parameters), this.session.first ? data = this.session.last && "(direct)" === data.source ? this.session.last : data : (this.session.first = data, 
         this.setCookie(this.config.cookieNames.first, data, 400, "days")), this.session.last = data, 
