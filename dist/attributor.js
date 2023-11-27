@@ -2,7 +2,7 @@
  * attributor.js v2.0 
  * https://github.com/derekcavaliero/attributor
  * © 2018-2023 Derek Cavaliero @ WebMechanix
- * Updated: 2023-11-27 13:25:54 PST 
+ * Updated: 2023-11-27 14:21:00 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -38,8 +38,8 @@ Attributor = function(config) {
                 adgroup: "utm_adgroup",
                 id: "utm_id"
             },
-            cookies: {},
-            globals: {}
+            cookies: null,
+            globals: null
         },
         fieldTargetMethod: "name",
         filters: {

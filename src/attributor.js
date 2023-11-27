@@ -33,8 +33,8 @@ Attributor = function(config) {
         adgroup: 'utm_adgroup',
         id: 'utm_id'
       },
-      cookies: {},
-      globals: {}
+      cookies: null,
+      globals: null
     },
     fieldTargetMethod: 'name',
     filters: {
