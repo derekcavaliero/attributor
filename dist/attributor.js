@@ -2,7 +2,7 @@
  * attributor.js v2.0 
  * https://github.com/derekcavaliero/attributor
  * © 2018-2023 Derek Cavaliero @ WebMechanix
- * Updated: 2023-11-27 14:21:00 PST 
+ * Updated: 2023-11-28 09:07:01 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -63,19 +63,17 @@ Attributor = function(config) {
         for (var prop in source) source.hasOwnProperty(prop) && source[prop] instanceof Object && Object.assign(source[prop], this.deepMerge(target[prop], source[prop]));
         return Object.assign(target || {}, source), target;
     },
-    getAll: function(multitouch) {
-        var multitouch = "undefined" == typeof multitouch || multitouch, data = {
+    grab: function(sessionMode) {
+        var sessionMode = "undefined" != typeof sessionMode ? sessionMode : "all", data = {
             cookies: this.getCookieValues(),
             globals: this.getGlobalValues()
         };
         for (var key in this.config.fieldMap) if (this.config.fieldMap.hasOwnProperty(key) && data.hasOwnProperty(key)) for (var prop in this.config.fieldMap[key]) this.config.fieldMap[key].hasOwnProperty(prop) && (data[key][prop] && data[key][prop] != this.config.nullValue && (data[key][this.config.fieldMap[key][prop]] = data[key][prop]), 
         delete data[key][prop]);
-        var campaign = multitouch ? {
-            first: this.session.first,
-            last: this.session.last
-        } : this.session.last;
-        return Object.assign({
-            campaign: campaign
+        var sessionData = {};
+        return "all" == sessionMode ? sessionData = this.session : [ "first", "last" ].indexOf(sessionMode) > -1 && (sessionData = this.session[sessionMode]), 
+        Object.assign({
+            session: sessionData
         }, data.cookies, data.globals);
     },
     fillFormFields: function(settings) {

@@ -91,9 +91,10 @@ Attributor.prototype = {
 
   },
 
-  getAll: function(multitouch) {
+  grab: function(sessionMode) {
 
-      var multitouch = typeof multitouch !== 'undefined' ? multitouch : true;
+      // Valid values: 'all', 'first', 'last'
+      var sessionMode = typeof sessionMode !== 'undefined' ? sessionMode : 'all';
 
       var data = {
         cookies: this.getCookieValues(),
@@ -119,14 +120,17 @@ Attributor.prototype = {
 
       }
 
-      var campaign = multitouch ? {
-        first: this.session.first,
-        last: this.session.last
-      } : this.session.last;
+      var sessionData = {};
+
+      if (sessionMode == 'all') {
+        sessionData = this.session;
+      } else if (['first', 'last'].indexOf(sessionMode) > -1) {
+        sessionData = this.session[sessionMode];
+      }
 
       return Object.assign(
         {
-          campaign: campaign
+          session: sessionData
         },
         data.cookies, 
         data.globals
