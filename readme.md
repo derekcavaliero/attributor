@@ -24,23 +24,31 @@ Each of these cookies contains an encoded JSON object of key:value pairs for the
 - marketing_tactic
 - creative_format
 
-Most the the data points above are pulled from standard UTM parameters or are given values via referral parsing and/or general metadata (date/lp).
+The data points above are pulled from standard UTM parameters or are assigned implicit values via referral parsing.
 
 ### How to Use
 
 #### Install Attributor.js
-This can be done via a custom HTML tag inside of Google Tag Manager - or you can include the script in your own webpack/gulp dependencies.
+The easiest way to use Attributor is by loading the script via jsdelivr. This can be done via a Custom HTML tag inside of Google Tag Manager.
 
+```html
+<script src="https://cdn.jsdelivr.net/gh/derekcavaliero/attributor@latest/dist/attributor.min.js"></script>
+<script>
+(function(){
+    window.__utmz = new Attributor();
+})();
+</script>
+```
 
 #### Creating an Attributor instance
-The `Attributor` contructor accepts a single configuration object - the library uses sensible defaults, so you only need to override what configuration options you need to change.
+The `Attributor` constructor accepts a single configuration object - the library uses (some) sensible defaults, so you only need to override what configuration options you need to change.
 
     var __utmz = new Attributor({
       cookieDomain: 'domain.com'
     });
 
 #### Default Field Mapping
-Attributor uses sensible defaults for field mapping. Fields are mapped per cookie using HTML `<input>` `name` attributes. The script can easily be modified to use classes for field mapping. The default field mapping is defined as a simple object literal:
+Attributor uses sensible defaults for mapping stored campaign data to html form inputs. Fields are mapped per cookie using HTML `<input>` `name` attributes. The script can easily be modified to use classes for field mapping. The default field mapping is defined as a simple object literal:
 
 ```javascript
 {
@@ -68,8 +76,8 @@ Attributor uses sensible defaults for field mapping. Fields are mapped per cooki
         adgroup: 'utm_adgroup',
         id: 'utm_id'
     },
-    cookies: {},
-    globals: {}
+    cookies: null,
+    globals: null
 }
 ```
 
@@ -139,9 +147,36 @@ var __utmz = new Attributor({
 });
 ```
 
+#### Cookies and Globals
+Grabbing values from cookies set by other ad/martech is a pretty common need (especially for paid media). Attributor's `cookies` property in the config `fieldMap` can be customized to grab any 1st party cookie value and have it mapped to a form input similar to the first/last touch campaign data mentioned above. 
+
+For example, you could grab the `_gcl_aw` (Google Ads Click ID), and `_ga` (Google Analytics Client ID) cookie values + the current user agent via `navigator.userAgent` as so:
+
+```json
+{
+    first: {},
+    last: {},
+    cookies: {
+        _ga: 'ga_client_id',
+        _gcl_aw: 'gclid'
+    },
+    globals: {
+        'navigator.userAgent': 'user_agent' 
+    }
+}
+```
+
+The above example would map the data to the 3 form fields with the approprate names:
+
+```html
+<input type="hidden" name="ga_client_id">
+<input type="hidden" name="gclid">
+<input type="hidden" name="user_agent">
+```
+
 #### Filters
 
-The library has some predefined filters to handle filtering the cookie and global values. Note - these filters _only_ work on the `cookies` and `globals`. You can define filters using the `filters` property in the configuration object. For example the following filter will remove the first two delimited values from the `_ga` cookie. The filter property name _must_ match the name of the cookie or global window path reference.
+The library has some predefined filters to handle filtering the cookie and global values. Note - these filters _only_ work on the `cookies` and `globals`. You can define filters using the `filters` property in the config object. For example, the following filter will remove the first two delimited values from the `_ga` cookie. The filter property name _must_ match the name of the cookie or global window path reference.
 
 ```javascript
 filters: {
@@ -152,6 +187,10 @@ filters: {
     }
 }
 ```
+
+#### `Attributor.getAll()`
+
+For convenience, each Attributor instance will have access to a `getAll()` method that will return an object literal of all the data in the fieldMap object. This can be useful if you would like to store the data as a JSON string in a single record rather than explicit form fields.
 
 #### Prefilling
 The script will automatically run it's `Attributor.fillFormFields()` method when initialized.
