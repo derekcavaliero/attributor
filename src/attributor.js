@@ -503,6 +503,9 @@ Attributor.prototype = {
       if (!e.target.matches('a')) 
         return;
 
+      if (!e.target.href)
+        return;
+
       var url = new URL(e.target.href);
 
       if (_self.config.decorateHostnames.indexOf(url.hostname) === -1)

@@ -1,8 +1,8 @@
 /*! 
  * attributor.js v2.0 
  * https://github.com/derekcavaliero/attributor
- * © 2018-2023 Derek Cavaliero @ WebMechanix
- * Updated: 2023-11-28 09:07:01 PST 
+ * © 2018-2024 Derek Cavaliero @ WebMechanix
+ * Updated: 2024-01-30 06:05:24 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -230,7 +230,7 @@ Attributor = function(config) {
             });
         }
         function decorateLinks(e) {
-            if (e.target.matches("a")) {
+            if (e.target.matches("a") && e.target.href) {
                 var url = new URL(e.target.href);
                 _self.config.decorateHostnames.indexOf(url.hostname) !== -1 && ([ "source", "medium", "campaign", "term", "content", "id" ].forEach(function(param) {
                     url.searchParams.set("utm_" + param, _self.session.last[param]);
