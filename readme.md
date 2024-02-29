@@ -152,10 +152,9 @@ Grabbing values from cookies set by other ad/martech is a pretty common need (es
 
 For example, you could grab the `_gcl_aw` (Google Ads Click ID), and `_ga` (Google Analytics Client ID) cookie values + the current user agent via `navigator.userAgent` as so:
 
-```json
-{
-    first: {},
-    last: {},
+```javascript
+fieldMap: {
+    // ...
     cookies: {
         _ga: 'ga_client_id',
         _gcl_aw: 'gclid'
