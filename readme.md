@@ -191,9 +191,6 @@ filters: {
 
 For convenience, each Attributor instance will have access to a `grab()` method that will return an object literal of all the data in the fieldMap object. This can be useful if you would like to store the data as a JSON string in a single record rather than explicit form fields. The `grab()` method accepts a single argument - `sessionMode` - which can be either `first`, `last`, or `all` (default). If no argument is passed, the method will return all stored session data.
 
-
-```javascript
-
 #### Prefilling
 The script will automatically run it's `Attributor.fillFormFields()` method when initialized.
 
