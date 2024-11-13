@@ -1,8 +1,8 @@
 /*! 
- * attributor.js v2.0 
+ * attributor.js v2.1 
  * https://github.com/derekcavaliero/attributor
- * © 2018-2024 Derek Cavaliero @ WebMechanix
- * Updated: 2024-01-30 06:05:24 PST 
+ * © 2018-2024 Derek Cavaliero @ LEVEL
+ * Updated: 2024-11-12 17:17:07 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -23,33 +23,46 @@ Attributor = function(config) {
                 source_platform: "utm_source_platform_1st",
                 marketing_tactic: "utm_marketing_tactic_1st",
                 creative_format: "utm_creative_format_1st",
+                id: "utm_id_1st",
+                adextension: "utm_adextension_1st",
                 adgroup: "utm_adgroup_1st",
-                id: "utm_id_1st"
+                adgroupid: "utm_adgroupid_1st",
+                adplacement: "utm_adplacement_1st",
+                adposition: "utm_adposition_1st",
+                campaignid: "utm_campaignid_1st",
+                geo: "utm_geo_1st",
+                keymatch: "utm_keymatch_1st",
+                device: "utm_device_1st",
+                matchtype: "utm_matchtype_1st",
+                network: "utm_network_1st"
             },
             last: {
                 source: "utm_source",
                 medium: "utm_medium",
                 campaign: "utm_campaign",
+                id: "utm_id",
                 term: "utm_term",
                 content: "utm_content",
                 source_platform: "utm_source_platform",
                 marketing_tactic: "utm_marketing_tactic",
                 creative_format: "utm_creative_format",
+                adextension: "utm_adextension",
                 adgroup: "utm_adgroup",
-                id: "utm_id"
+                adgroupid: "utm_adgroupid",
+                adplacement: "utm_adplacement",
+                adposition: "utm_adposition",
+                campaignid: "utm_campaignid",
+                geo: "utm_geo",
+                keymatch: "utm_keymatch",
+                device: "utm_device",
+                matchtype: "utm_matchtype",
+                network: "utm_network"
             },
             cookies: null,
             globals: null
         },
         fieldTargetMethod: "name",
-        filters: {
-            "location.href": function(val) {
-                return val.split("?")[0];
-            },
-            "document.referrer": function(val) {
-                return val.split("?")[0];
-            }
-        },
+        filters: {},
         nullValue: "(not set)",
         sessionTimeout: 30
     };
@@ -145,12 +158,13 @@ Attributor = function(config) {
     parseParameters: function() {
         var _self = this, parsed = {};
         if (!this.parameters) return parsed;
-        if ([ "source", "medium", "campaign", "term", "content", "source_platform", "marketing_tactic", "creative_format", "adgroup", "id" ].forEach(function(item) {
+        var parameterKeys = Object.keys(this.config.fieldMap.last);
+        if (parameterKeys.forEach(function(item) {
             var parameter = "utm_" + item;
             _self.parameters.has(parameter) && (parsed[item] = _self.parameters.get(parameter));
         }), !this.parameters.has("utm_source") && !this.parameters.has("utm_medium")) {
             var cpc = {
-                google: [ "gclid", "gclsrc", "dclid", "wbraid", "gad_source" ],
+                google: [ "gclid", "gclsrc", "dclid", "wbraid", "gbraid", "gad_source" ],
                 facebook: "fbclid",
                 bing: "msclkid",
                 linkedin: "li_fat_id",
@@ -232,9 +246,12 @@ Attributor = function(config) {
         function decorateLinks(e) {
             if (e.target.matches("a") && e.target.href) {
                 var url = new URL(e.target.href);
-                _self.config.decorateHostnames.indexOf(url.hostname) !== -1 && ([ "source", "medium", "campaign", "term", "content", "id" ].forEach(function(param) {
-                    url.searchParams.set("utm_" + param, _self.session.last[param]);
-                }), e.target.href = url.toString());
+                if (_self.config.decorateHostnames.indexOf(url.hostname) !== -1) {
+                    var parameterKeys = Object.keys(_self.config.fieldMap.last);
+                    parameterKeys.forEach(function(param) {
+                        _self.session.last[param] !== _self.config.nullValue && url.searchParams.set("utm_" + param, _self.session.last[param]);
+                    }), e.target.href = url.toString();
+                }
             }
         }
         var _self = this;
@@ -256,18 +273,14 @@ Attributor = function(config) {
         return referrer = !clear && (!!document.referrer && new URL(document.referrer));
     },
     updateSession: function() {
-        var data = {
+        var _self = this, data = {
             source: "(direct)",
-            medium: "(none)",
-            campaign: this.config.nullValue,
-            term: this.config.nullValue,
-            content: this.config.nullValue,
-            source_platform: this.config.nullValue,
-            marketing_tactic: this.config.nullValue,
-            creative_format: this.config.nullValue,
-            adgroup: this.config.nullValue,
-            id: this.config.nullValue
-        }, parameters = this.parseParameters(), referrer = parameters.hasOwnProperty("source") && parameters.hasOwnProperty("medium") ? {} : this.parseReferrer();
+            medium: "(none)"
+        };
+        Object.keys(this.config.fieldMap.last).forEach(function(parameter) {
+            [ "source", "medium" ].includes(parameter) || (data[parameter] = _self.config.nullValue);
+        });
+        var parameters = this.parseParameters(), referrer = parameters.hasOwnProperty("source") && parameters.hasOwnProperty("medium") ? {} : this.parseReferrer();
         Object.assign(data, referrer, parameters), this.session.first ? data = this.session.last && "(direct)" === data.source ? this.session.last : data : (this.session.first = data, 
         this.setCookie(this.config.cookieNames.first, data, 400, "days")), this.session.last = data, 
         this.setCookie(this.config.cookieNames.last, data, this.config.sessionTimeout);

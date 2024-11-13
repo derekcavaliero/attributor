@@ -17,7 +17,7 @@ module.exports = function( grunt ) {
 
 		uglify: {
 			options: {
-				banner: '/*! \n * <%= pkg.name %>.js v<%= pkg.version %> \n * <%= pkg.repo %>\n * © 2018-<%= grunt.template.today("yyyy") %> Derek Cavaliero @ WebMechanix\n * Updated: <%= grunt.template.today("yyyy-mm-dd HH:MM:ss Z") %> \n */\n',
+				banner: '/*! \n * <%= pkg.name %>.js v<%= pkg.version %> \n * <%= pkg.repo %>\n * © 2018-<%= grunt.template.today("yyyy") %> Derek Cavaliero @ LEVEL\n * Updated: <%= grunt.template.today("yyyy-mm-dd HH:MM:ss Z") %> \n */\n',
 			},
 			dist: {
 				options: {

@@ -10,6 +10,7 @@ Attributor = function(config) {
     enableSpaSupport: false,
     fieldMap: {
       first: {
+        // Standard UTMs supported by Google Analytics
         source: 'utm_source_1st',
         medium: 'utm_medium_1st',
         campaign: 'utm_campaign_1st',
@@ -18,37 +19,51 @@ Attributor = function(config) {
         source_platform: 'utm_source_platform_1st',
         marketing_tactic: 'utm_marketing_tactic_1st',
         creative_format: 'utm_creative_format_1st',
+        id: 'utm_id_1st',
+
+        // Synthetic UTMs for "Value Track" parameters
+        adextension: 'utm_adextension_1st',
         adgroup: 'utm_adgroup_1st',
-        id: 'utm_id_1st'
+        adgroupid: 'utm_adgroupid_1st',
+        adplacement: 'utm_adplacement_1st',
+        adposition: 'utm_adposition_1st',
+        campaignid: 'utm_campaignid_1st',
+        geo: 'utm_geo_1st',
+        keymatch: 'utm_keymatch_1st',
+        device: 'utm_device_1st',
+        matchtype: 'utm_matchtype_1st',
+        network: 'utm_network_1st',
       },
       last: {
+        // Standard UTMs supported by Google Analytics
         source: 'utm_source',
         medium: 'utm_medium',
         campaign: 'utm_campaign',
+        id: 'utm_id',
         term: 'utm_term',
         content: 'utm_content',
         source_platform: 'utm_source_platform',
         marketing_tactic: 'utm_marketing_tactic',
         creative_format: 'utm_creative_format',
+
+        // Synthetic UTMs for "Value Track" parameters
+        adextension: 'utm_adextension',
         adgroup: 'utm_adgroup',
-        id: 'utm_id'
+        adgroupid: 'utm_adgroupid',
+        adplacement: 'utm_adplacement',
+        adposition: 'utm_adposition',
+        campaignid: 'utm_campaignid',
+        geo: 'utm_geo',
+        keymatch: 'utm_keymatch',
+        device: 'utm_device',
+        matchtype: 'utm_matchtype',
+        network: 'utm_network',
       },
       cookies: null,
       globals: null
     },
     fieldTargetMethod: 'name',
-    filters: {
-      'location.href': function(val) {
-        // e.g: https://www.example.com/path?query=string
-        // Should return https://www.example.com/path
-        return val.split('?')[0];
-      },
-      'document.referrer': function(val) {
-        // e.g: https://www.example.com/path?query=string
-        // Should return https://www.example.com/path
-        return val.split('?')[0];
-      }
-    },
+    filters: {},
     nullValue: '(not set)',
     sessionTimeout: 30
   };
@@ -299,18 +314,8 @@ Attributor.prototype = {
     if (!this.parameters)
       return parsed;
     
-    [
-      'source', 
-      'medium', 
-      'campaign', 
-      'term', 
-      'content', 
-      'source_platform', 
-      'marketing_tactic', 
-      'creative_format', 
-      'adgroup',
-      'id'
-    ].forEach(function(item) { 
+    var parameterKeys = Object.keys(this.config.fieldMap.last);
+    parameterKeys.forEach(function(item) {
         
       var parameter = 'utm_' + item;
 
@@ -324,7 +329,7 @@ Attributor.prototype = {
 
       // @CONSIDER: we might want to allow for overriding these rules through the config
       var cpc = {
-        google: ['gclid', 'gclsrc', 'dclid', 'wbraid', 'gad_source'],
+        google: ['gclid', 'gclsrc', 'dclid', 'wbraid', 'gbraid', 'gad_source'],
         facebook: 'fbclid',
         bing: 'msclkid',
         linkedin: 'li_fat_id',
@@ -511,7 +516,12 @@ Attributor.prototype = {
       if (_self.config.decorateHostnames.indexOf(url.hostname) === -1)
         return;
 
-      ['source', 'medium', 'campaign', 'term', 'content', 'id'].forEach(function(param) {
+      var parameterKeys = Object.keys(_self.config.fieldMap.last);
+
+      parameterKeys.forEach(function(param) {
+        if (_self.session.last[param] === _self.config.nullValue)
+          return;
+        
         url.searchParams.set('utm_' + param, _self.session.last[param]);
       });
 
@@ -547,6 +557,8 @@ Attributor.prototype = {
 
   updateSession: function() {
 
+    var _self = this;
+
     /**
      * Parsing logic:
      * 1. Set sensible defaults to match GA defaults.
@@ -559,16 +571,15 @@ Attributor.prototype = {
 
     var data = {
       source: '(direct)',
-      medium: '(none)',
-      campaign: this.config.nullValue,
-      term: this.config.nullValue,
-      content: this.config.nullValue,
-      source_platform: this.config.nullValue,
-      marketing_tactic: this.config.nullValue,
-      creative_format: this.config.nullValue,
-      adgroup: this.config.nullValue,
-      id: this.config.nullValue
+      medium: '(none)'
     };
+
+    Object.keys(this.config.fieldMap.last).forEach(function(parameter) {
+      if (['source', 'medium'].includes(parameter))
+        return;
+
+      data[parameter] = _self.config.nullValue;
+    });
 
     var parameters = this.parseParameters();
     var referrer = parameters.hasOwnProperty('source') && parameters.hasOwnProperty('medium') ? {} : this.parseReferrer();
