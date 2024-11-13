@@ -25,7 +25,7 @@ module.exports = function( grunt ) {
 					compress: true, // renames variables and all that
 					mangle: true,
 					compress: {
-						drop_console: true
+						drop_console: false
 					}
 				},
 				files: {

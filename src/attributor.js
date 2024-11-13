@@ -62,11 +62,17 @@ Attributor = function(config) {
       cookies: null,
       globals: null
     },
-    fieldTargetMethod: 'name',
+    fieldDataAttribute: 'data-attributor-field',
+    fieldTargetMethod: ['name'],
     filters: {},
     nullValue: '(not set)',
     sessionTimeout: 30
   };
+
+  console.time('Attributor.js');
+
+  // Backwards compatibility for fieldTargetMethod being a string in older versions
+  config.fieldTargetMethod = Array.isArray(config.fieldTargetMethod) ? config.fieldTargetMethod : [config.fieldTargetMethod];
   
   this.config = this.deepMerge(_defaults, config);
 
@@ -81,6 +87,8 @@ Attributor = function(config) {
   this.updateSession();
   this.fillFormFields();
   this.setEventListeners();
+
+  console.timeEnd('Attributor.js');
 
 }
 
@@ -155,7 +163,12 @@ Attributor.prototype = {
 
   fillFormFields: function(settings)  {
 
+    var _self = this;
+
     var settings = typeof settings === 'object' ? settings : {};
+
+    if (settings.hasOwnProperty('targetMethod'))
+      settings.targetMethod = Array.isArray(settings.targetMethod) ? settings.targetMethod : [settings.targetMethod];
 
     var query = {
       targetMethod: settings.targetMethod || this.config.fieldTargetMethod,
@@ -182,23 +195,22 @@ Attributor.prototype = {
 
         var fields;
         var field = this.config.fieldMap[key][prop];
+        var querySelector = [];
 
-        switch (query.targetMethod) {
+        query.targetMethod.forEach(function(method) {
 
-          case 'class':
-            fields = query.scope.querySelectorAll('input.' + field);
-          break;
+          var selectors = {
+            class: 'input.' + field,
+            parentClass: '.' + field + ' input',
+            dataAttribute: 'input[' + _self.config.fieldDataAttribute + '="' + field + '"]',
+            name: 'input[name="' + field + '"]'
+          };
 
-          case 'parentClass':
-            fields = query.scope.querySelectorAll('.' + field + ' input');
-          break;
+          querySelector.push(selectors[method] || selectors.name);
 
-          case 'name':
-          default:
-            fields = query.scope.querySelectorAll('input[name="' + field + '"]');
-          break;
+        });
 
-        }
+        fields = query.scope.querySelectorAll(querySelector.join(','));
 
         if (!fields)
           continue;

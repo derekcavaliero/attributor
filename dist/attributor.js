@@ -1,8 +1,8 @@
 /*! 
- * attributor.js v2.1 
+ * attributor.js v2.1.1 
  * https://github.com/derekcavaliero/attributor
  * © 2018-2024 Derek Cavaliero @ LEVEL
- * Updated: 2024-11-12 17:17:07 PST 
+ * Updated: 2024-11-13 10:41:56 PST 
  */
 Attributor = function(config) {
     var _defaults = {
@@ -61,16 +61,18 @@ Attributor = function(config) {
             cookies: null,
             globals: null
         },
-        fieldTargetMethod: "name",
+        fieldDataAttribute: "data-attributor-field",
+        fieldTargetMethod: [ "name" ],
         filters: {},
         nullValue: "(not set)",
         sessionTimeout: 30
     };
+    console.time("Attributor.js"), config.fieldTargetMethod = Array.isArray(config.fieldTargetMethod) ? config.fieldTargetMethod : [ config.fieldTargetMethod ], 
     this.config = this.deepMerge(_defaults, config), this.referrer = this.setReferrer(), 
     this.parameters = this.setParameters(), this.session = {
         first: this.getCookie(this.config.cookieNames.first) || !1,
         last: this.getCookie(this.config.cookieNames.last) || !1
-    }, this.updateSession(), this.fillFormFields(), this.setEventListeners();
+    }, this.updateSession(), this.fillFormFields(), this.setEventListeners(), console.timeEnd("Attributor.js");
 }, Attributor.prototype = {
     deepMerge: function(target, source) {
         for (var prop in source) source.hasOwnProperty(prop) && source[prop] instanceof Object && Object.assign(source[prop], this.deepMerge(target[prop], source[prop]));
@@ -90,7 +92,9 @@ Attributor = function(config) {
         }, data.cookies, data.globals);
     },
     fillFormFields: function(settings) {
-        var settings = "object" == typeof settings ? settings : {}, query = {
+        var _self = this, settings = "object" == typeof settings ? settings : {};
+        settings.hasOwnProperty("targetMethod") && (settings.targetMethod = Array.isArray(settings.targetMethod) ? settings.targetMethod : [ settings.targetMethod ]);
+        var query = {
             targetMethod: settings.targetMethod || this.config.fieldTargetMethod,
             scope: settings.scope || document
         }, data = {
@@ -101,21 +105,16 @@ Attributor = function(config) {
             globals: this.getGlobalValues()
         };
         for (var key in this.config.fieldMap) if (this.config.fieldMap.hasOwnProperty(key)) for (var prop in this.config.fieldMap[key]) if (this.config.fieldMap[key].hasOwnProperty(prop)) {
-            var fields, field = this.config.fieldMap[key][prop];
-            switch (query.targetMethod) {
-              case "class":
-                fields = query.scope.querySelectorAll("input." + field);
-                break;
-
-              case "parentClass":
-                fields = query.scope.querySelectorAll("." + field + " input");
-                break;
-
-              case "name":
-              default:
-                fields = query.scope.querySelectorAll('input[name="' + field + '"]');
-            }
-            if (fields) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && "" != data[key][prop] && (fields[i].value = data[key][prop], 
+            var fields, field = this.config.fieldMap[key][prop], querySelector = [];
+            if (query.targetMethod.forEach(function(method) {
+                var selectors = {
+                    "class": "input." + field,
+                    parentClass: "." + field + " input",
+                    dataAttribute: "input[" + _self.config.fieldDataAttribute + '="' + field + '"]',
+                    name: 'input[name="' + field + '"]'
+                };
+                querySelector.push(selectors[method] || selectors.name);
+            }), fields = query.scope.querySelectorAll(querySelector.join(","))) for (var i = 0; i < fields.length; i++) data[key].hasOwnProperty(prop) && "" != data[key][prop] && (fields[i].value = data[key][prop], 
             fields[i].dispatchEvent(new Event("input", {
                 bubbles: !0
             })));
